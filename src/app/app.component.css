@@ -1,0 +1,17 @@
+.centerise {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.phone {
+  height: 544px;
+  width: 295px;
+  border-radius: 40px;
+  overflow: hidden;
+}
+
+.phone-shadow {
+  box-shadow: rgba(17, 12, 46, 0.15) 0px 48px 100px 0px;
+}
