@@ -1,5 +1,5 @@
 .activity-graph {
-  height: 280px;
+  height: 220px;
   display: flex;
   flex-direction: column;
   flex-wrap: nowrap;
@@ -13,19 +13,22 @@
 }
 
 .week {
-  height: 100%;
+  height: 70%;
   flex-basis: 295px;
   flex-grow: 0;
   flex-shrink: 0;
 }
-.inner-week {
-  padding: 12px;
+
+.info-container {
+  height: 30%;
 }
+
 .week-container {
   display: flex;
   flex-direction: row;
-  overflow: hidden;
-  height: 35%;
+}
+.graph-container {
+  height: 30%;
 }
 .display-week {
   font-weight: bold;
@@ -42,16 +45,11 @@
   border-right: 1px solid #dbdbdb;
 }
 
-.values-container {
-  padding: 15px 0;
-}
 .value-title {
-  color: grey;
   font-size: 0.8em;
 }
 .value-value {
   font-size: 1.3em;
-  padding-top: 5px;
 }
 .stationary-week-container {
   height: 10%;

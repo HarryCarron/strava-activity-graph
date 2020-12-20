@@ -1,23 +1,12 @@
+* {
+  font-family: Helvetica, sans-serif;
+  font-size: 10px;
+}
+
 html,
 body {
   padding: 0;
   margin: 0;
   width: 100%;
   height: 100vh;
-}
-.h-50 {
-  height: 50%;
-}
-.h-100 {
-  height: 100%;
-}
-.w-100 {
-  width: 100%;
-}
-* {
-  font-family: Helvetica, sans-serif;
-  font-size: 11px;
-}
-.d-flex {
-  display: flex;
 }

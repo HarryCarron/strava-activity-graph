@@ -1,33 +1,41 @@
 <div class="activity-graph w-100 activity-graph-shadow">
-  <div class="w-100 week-container">
-    <div class="week" *ngFor="let week of data">
-      <div class="inner-week h-100">
-        <div class="display-week">
-          {{ week.week.displayDate }}
-        </div>
-        <div class="values-container d-flex">
-          <div class="value-separator">
-            <div class="value-title">Distance</div>
-            <div class="value-value">
-              {{ week.distance + " km" }}
-            </div>
+  <div>
+    <div class="w-100 week-container">
+      <div class="week" *ngFor="let week of data.weeks">
+        <div class="px-4 p-4 h-100">
+          <div class="display-week">
+            {{ week.displayDate }}
           </div>
-          <div class="value-separator">
-            <div class="value-title">Time</div>
-            <div class="value-value">
-              {{ week.time }}
+          <div class="d-flex pt-3">
+            <div class="pr-3 value-separator">
+              <div class="value-title text-muted">Distance</div>
+              <div class="value-value pt-1">
+                {{ week.distance + " km" }}
+              </div>
             </div>
-          </div>
-          <div class="elevation">
-            <div class="value-title">Elevation</div>
-            <div class="value-value">
-              {{ week.elevation + " m" }}
+            <div class="px-3 value-separator">
+              <div class="value-title text-muted">Time</div>
+              <div class="value-value pt-1">
+                {{ week.time }}
+              </div>
+            </div>
+            <div class="pl-3">
+              <div class="value-title text-muted">Elevation</div>
+              <div class="value-value pt-1">
+                {{ week.elevation + " m" }}
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+    <div class="px-4 info-container">
+      <div class="font-weight-bold text-dark">LAST 12 WEEKS</div>
+      <div class="text-muted">{{ data.highestWeeklyDistance + " km" }}</div>
+    </div>
   </div>
-  <div class="stationary-week-container w-100"></div>
-  <div class="w-100"></div>
+
+  <div #graphContainer class="w-100 flex-grow-1">
+    <svg #graph></svg>
+  </div>
 </div>
