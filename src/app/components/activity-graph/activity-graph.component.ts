@@ -1,15 +1,13 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Input } from "@angular/core";
+import { WeeklyData } from "./../../app.component";
 
 @Component({
-  selector: 'app-activity-graph',
-  templateUrl: './activity-graph.component.html',
-  styleUrls: ['./activity-graph.component.css']
+  selector: "app-activity-graph",
+  templateUrl: "./activity-graph.component.html",
+  styleUrls: ["./activity-graph.component.css"],
 })
-export class ActivityGraphComponent implements OnInit {
+export class ActivityGraphComponent {
+  constructor() {}
 
-  constructor() { }
-
-  ngOnInit(): void {
-  }
-
+  @Input() data: WeeklyData[];
 }

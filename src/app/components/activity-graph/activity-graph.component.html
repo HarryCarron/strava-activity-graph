@@ -1,4 +1,33 @@
 <div class="activity-graph w-100 activity-graph-shadow">
-  <div class="week-view-container activity-graph-component"></div>
-  <div class="graph-container activity-graph-component"></div>
+  <div class="w-100 week-container">
+    <div class="week" *ngFor="let week of data">
+      <div class="inner-week h-100">
+        <div class="display-week">
+          {{ week.week.displayDate }}
+        </div>
+        <div class="values-container d-flex">
+          <div class="value-separator">
+            <div class="value-title">Distance</div>
+            <div class="value-value">
+              {{ week.distance + " km" }}
+            </div>
+          </div>
+          <div class="value-separator">
+            <div class="value-title">Time</div>
+            <div class="value-value">
+              {{ week.time }}
+            </div>
+          </div>
+          <div class="elevation">
+            <div class="value-title">Elevation</div>
+            <div class="value-value">
+              {{ week.elevation + " m" }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="stationary-week-container w-100"></div>
+  <div class="w-100"></div>
 </div>

@@ -14,3 +14,10 @@ body {
 .w-100 {
   width: 100%;
 }
+* {
+  font-family: Helvetica, sans-serif;
+  font-size: 11px;
+}
+.d-flex {
+  display: flex;
+}
