@@ -2,16 +2,26 @@ import { Component, OnInit } from "@angular/core";
 import { UtilitiesService } from "./utilities.service";
 import * as moment from "moment";
 
-const ONE_KM_TIME = 3.53;
-const UPPER_DISTANCE_LIMIT = 10000;
-const LOWER_DISTANCE_LIMIT = 100;
+/**
+ * One Kilometer time in seconds
+ */
+const ONE_KM_TIME_S = 210;
+/**
+ * Distance upper limit in meters
+ */
+const UPPER_DISTANCE_LIMIT_M = 10000;
+/**
+ * Distance lower limit in meters
+ */
+const LOWER_DISTANCE_LIMIT_M = 1000;
 
 interface WeekInfo {
   displayDate: string;
-  isBeginingOfWeek: boolean;
+  isBeginingOfMonth: boolean;
   distance: number;
-  time: number;
+  time: string;
   elevation: number;
+  monthShort: string;
 }
 
 export interface TwelveWeekData {
@@ -25,55 +35,72 @@ export interface TwelveWeekData {
   styleUrls: ["./app.component.css"],
 })
 export class AppComponent implements OnInit {
-  /**
-   *
-   */
   constructor(private utilities: UtilitiesService) {}
 
   data: TwelveWeekData;
 
   /**
-   * Generates random distance. Format 00.00;
+   * Generates random distance in meters
    */
-  private getRandomDistance() {
-    return (
-      (Math.floor(
-        Math.random() * (UPPER_DISTANCE_LIMIT - LOWER_DISTANCE_LIMIT + 1)
-      ) +
-        LOWER_DISTANCE_LIMIT) /
-      LOWER_DISTANCE_LIMIT
+  private getRandomDistance(): number {
+    return Math.floor(
+      Math.random() * (UPPER_DISTANCE_LIMIT_M - LOWER_DISTANCE_LIMIT_M + 1) +
+        LOWER_DISTANCE_LIMIT_M
     );
   }
+
+  /**
+   * Converts ellapsed time (seconds) to human readable format 00m 00m
+   * @param seconds Ellpased time in seconds
+   *
+   */
+  private secondsToHoursMinutesHumanReadable(seconds: number): string {
+    const _seconds = seconds % 60;
+    const minutes = Math.floor(_seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    return `${hours}h ${minutes}m`;
+  }
+
   private getWeek(i: number): WeekInfo {
-    const week = (ii: number) => moment().week((12 - ii) * -1);
+    const week = (offset: number) => moment().subtract(offset, "weeks");
     const format = (rawWeek) => rawWeek.format("D MMM");
-    const weekBegining = week(i - 1);
-    const weekEnding = week(i);
+    const weekBegining = week(i);
+    const weekEnding = week(i - 1);
     const distance = this.getRandomDistance();
-    const time = parseFloat((distance * ONE_KM_TIME).toFixed(2));
+    const time = this.secondsToHoursMinutesHumanReadable(
+      distance * ONE_KM_TIME_S
+    );
+    const isBeginingOfMonth = weekBegining.date() <= 7;
     const elevation = Math.floor(Math.random() * (300 - 10 + 1) + 10 / 10);
-    const displayDate = `${format(weekBegining)} - ${format(weekEnding)}`;
+    const displayDate =
+      i === 0 ? "This Week" : `${format(weekBegining)} - ${format(weekEnding)}`;
+    const monthShort = weekBegining.format("MMM");
+
     return {
       displayDate,
-      isBeginingOfWeek: weekBegining.date() <= 7,
+      isBeginingOfMonth,
       distance,
       time,
       elevation,
+      monthShort,
     };
   }
 
   private buildTestData(): TwelveWeekData {
     let highestWeeklyDistance = 0;
 
-    const weeks = this.utilities.arrayOfLength(12).map((weekNumber) => {
-      const week = this.getWeek(weekNumber);
+    const weeks = this.utilities
+      .arrayOfLength(12)
+      .map((weekNumber) => {
+        const week = this.getWeek(weekNumber);
 
-      if (week.distance > highestWeeklyDistance) {
-        highestWeeklyDistance = Math.ceil(week.distance);
-      }
+        if (week.distance > highestWeeklyDistance) {
+          highestWeeklyDistance = Math.ceil(week.distance);
+        }
 
-      return week;
-    });
+        return week;
+      })
+      .reverse();
 
     return {
       highestWeeklyDistance,
@@ -83,5 +110,6 @@ export class AppComponent implements OnInit {
 
   ngOnInit() {
     this.data = this.buildTestData();
+    console.log(this.data);
   }
 }

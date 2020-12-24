@@ -1,6 +1,6 @@
-<div class="activity-graph w-100 activity-graph-shadow">
+<div class="activity-graph rounded shadow-deep">
   <div>
-    <div class="w-100 week-container">
+    <div class="w-100 week-container" [ngStyle]="{ right: 295 * 11 + 'px' }">
       <div class="week" *ngFor="let week of data.weeks">
         <div class="px-4 p-4 h-100">
           <div class="display-week">
@@ -31,11 +31,13 @@
     </div>
     <div class="px-4 info-container">
       <div class="font-weight-bold text-dark">LAST 12 WEEKS</div>
-      <div class="text-muted">{{ data.highestWeeklyDistance + " km" }}</div>
+      <div class="text-muted">
+        {{ data.highestWeeklyDistance / 1000 + " km" }}
+      </div>
     </div>
   </div>
 
-  <div #graphContainer class="w-100 flex-grow-1">
+  <div #graphContainer class="w-100 grid-container">
     <svg #graph></svg>
   </div>
 </div>

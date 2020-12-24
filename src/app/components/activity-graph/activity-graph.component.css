@@ -1,5 +1,7 @@
 .activity-graph {
-  height: 220px;
+  height: 250px;
+  width: 295px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   flex-wrap: nowrap;
@@ -10,6 +12,14 @@
 .activity-graph-shadow {
   box-shadow: rgba(100, 100, 124, 0.25) 0px 6px 12px -2px,
     rgba(156, 156, 156, 0.3) 0px 3px 7px -3px;
+}
+
+.shadow-deep {
+  box-shadow: rgba(17, 12, 46, 0.15) 0px 48px 100px 0px;
+}
+
+.grid-container {
+  height: 131px;
 }
 
 .week {
@@ -26,6 +36,7 @@
 .week-container {
   display: flex;
   flex-direction: row;
+  position: relative;
 }
 .graph-container {
   height: 30%;
