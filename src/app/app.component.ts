@@ -55,9 +55,11 @@ export class AppComponent implements OnInit {
    *
    */
   private secondsToHoursMinutesHumanReadable(seconds: number): string {
-    const _seconds = seconds % 60;
-    const minutes = Math.floor(_seconds / 60);
+    const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
+    const nMinutes = Math.floor(hours % 60);
+    // const minutes = Math.floor(hours % 60);
+
     return `${hours}h ${minutes}m`;
   }
 

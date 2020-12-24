@@ -122,7 +122,7 @@ export class ActivityGraphComponent implements AfterViewInit {
 
       this.renderer.setAttribute(activeWeekPointAccent, 'fill',             DYNAMIC_ELEMENT_COLOR);
       this.renderer.setAttribute(activeWeekPointAccent, 'fill-opacity',     '0.3');
-      this.renderer.setAttribute(activeWeekPointAccent, 'r',                      '6');
+      this.renderer.setAttribute(activeWeekPointAccent, 'r',                      '8');
       return [activeWeekPointAccent, activeWeekPoint];
     };
 
@@ -141,20 +141,51 @@ export class ActivityGraphComponent implements AfterViewInit {
     this.renderer.appendChild(this._graph, getActiveWeekLine());
     const [activePoint, activePointAccent] = getActivePoints();
 
+    let pathDVal = '';
 
-
+    const path = this.renderer.createElement('path', 'svg');
+    const startPath = 'M';
+    const lineTOPath = 'L';
+    const stopPath = 'Z';
 
     this.data.weeks.forEach((w, i) => {
       const wp = getWeekPoint();
 
-      const yPointPosition = this.floorLimit - ((w.distance / this.data.highestWeeklyDistance) * this.cielLimit);
+      const yPointPosition = this.cielLimit + this.floorLimit - ((w.distance / (this.data.highestWeeklyDistance - 0)) * this.floorLimit);
       const xPointPosition = (this.leftLimit + 24.1 * i);
 
-      this.renderer.setAttribute(wp, 'cy', yPointPosition.toString());
+      let prefix;
+
+      if (i === 0) {
+        prefix = startPath;
+      } else {
+        prefix = lineTOPath;
+      }
+      pathDVal += `${prefix + xPointPosition} ${yPointPosition} `;
       this.renderer.setAttribute(wp, 'cx', xPointPosition.toString());
-      this.renderer.appendChild(this._graph, wp);
+      this.renderer.setAttribute(wp, 'cy', yPointPosition.toString());
       this.weekPoints.push(wp);
     });
+
+    this.renderer.setAttribute(path, 'stroke',            DYNAMIC_ELEMENT_COLOR);
+    this.renderer.setAttribute(path, 'fill',              'none');
+    this.renderer.setAttribute(path, 'stroke-width',      '2');
+    this.renderer.setAttribute(path, 'stroke-linecap',    'round');
+    this.renderer.setAttribute(path, 'd', pathDVal);
+    this.renderer.appendChild(this._graph, path);
+
+    const fill = this.renderer.createElement('path', 'svg');
+    this.renderer.setAttribute(fill, 'stroke',            'none');
+    this.renderer.setAttribute(fill, 'fill',              DYNAMIC_ELEMENT_COLOR);
+    this.renderer.setAttribute(fill, 'fill-opacity',              '0.2');
+    this.renderer.setAttribute(fill, 'stroke-width',      '0');
+    this.renderer.setAttribute(fill, 'd', pathDVal);
+    pathDVal += `L${this.rightLimit} ${this.floorLimit} L${this.leftLimit} ${this.floorLimit} L${this.leftLimit} ${this.cielLimit}`;
+    this.renderer.setAttribute(fill, 'd', pathDVal);
+    this.renderer.appendChild(this._graph, fill);
+    this.renderer.appendChild(this._graph, path);
+
+    this.weekPoints.forEach(wp => this.renderer.appendChild(this._graph, wp));
 
     [1, 2].forEach(i => {
       this.renderer.setAttribute(i === 1 ? activePointAccent : activePoint , 'cx', this.rightLimit.toString());
