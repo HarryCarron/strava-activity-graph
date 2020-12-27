@@ -1,6 +1,9 @@
 <div class="activity-graph rounded shadow-deep">
   <div>
-    <div class="w-100 week-container" [ngStyle]="{ right: 295 * 11 + 'px' }">
+    <div
+      class="w-100 week-container"
+      [ngStyle]="{ right: ((295 * 11) / 100) * weekUnit + 'px' }"
+    >
       <div class="week" *ngFor="let week of data.weeks">
         <div class="px-4 p-4 h-100">
           <div class="display-week">
@@ -10,7 +13,7 @@
             <div class="pr-3 value-separator">
               <div class="value-title text-muted">Distance</div>
               <div class="value-value pt-1">
-                {{ week.distance / 1000 + " km" }}
+                {{ weeklyDistance(week.distance) }}
               </div>
             </div>
             <div class="px-3 value-separator">
@@ -32,12 +35,23 @@
     <div class="px-4 info-container">
       <div class="font-weight-bold text-dark">LAST 12 WEEKS</div>
       <div class="text-muted">
-        {{ data.highestWeeklyDistance / 1000 + " km" }}
+        {{ highestWeeklyDistance }}
       </div>
     </div>
   </div>
 
   <div #graphContainer class="w-100 grid-container">
-    <svg #graph></svg>
+    <svg #graph (mousedown)="onClick($event)">
+      <linearGradient id="grad1" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop
+          offset="0%"
+          style="stop-color: rgb(253, 130, 79); stop-opacity: 0.1"
+        />
+        <stop
+          offset="100%"
+          style="stop-color: rgb(252, 76, 3); stop-opacity: 0.4"
+        />
+      </linearGradient>
+    </svg>
   </div>
 </div>
