@@ -1,9 +1,6 @@
 <div class="activity-graph rounded shadow-deep">
   <div>
-    <div
-      class="w-100 week-container"
-      [ngStyle]="{ right: ((295 * 11) / 100) * weekUnit + 'px' }"
-    >
+    <div class="w-100 week-container" #weekContainer>
       <div class="week" *ngFor="let week of data.weeks">
         <div class="px-4 p-4 h-100">
           <div class="display-week">

@@ -5,15 +5,15 @@ import * as moment from "moment";
 /**
  * One Kilometer time in seconds
  */
-const ONE_KM_TIME_S = 210;
+const ONE_M_TIME_S = 0.21;
 /**
  * Distance upper limit in meters
  */
-const UPPER_DISTANCE_LIMIT_M = 10000;
+const UPPER_DISTANCE_LIMIT_M = 100000;
 /**
  * Distance lower limit in meters
  */
-const LOWER_DISTANCE_LIMIT_M = 1000;
+const LOWER_DISTANCE_LIMIT_M = 50000;
 
 interface WeekInfo {
   displayDate: string;
@@ -55,12 +55,9 @@ export class AppComponent implements OnInit {
    *
    */
   private secondsToHoursMinutesHumanReadable(seconds: number): string {
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const nMinutes = Math.floor(hours % 60);
-    // const minutes = Math.floor(hours % 60);
-
-    return `${hours}h ${minutes}m`;
+    const date = new Date(1970, 0, 1);
+    date.setSeconds(seconds);
+    return `${date.getHours()}h ${date.getMinutes()}m`;
   }
 
   private getWeek(i: number): WeekInfo {
@@ -68,12 +65,18 @@ export class AppComponent implements OnInit {
     const format = (rawWeek) => rawWeek.format("D MMM");
     const weekBegining = week(i);
     const weekEnding = week(i - 1);
-    const distance = this.getRandomDistance();
+    let distance;
+    if (i === 0) {
+      // ! remove! testing purposes only!
+      distance = 0;
+    } else {
+      distance = this.getRandomDistance();
+    }
     const time = this.secondsToHoursMinutesHumanReadable(
-      distance * ONE_KM_TIME_S
+      Math.ceil(distance * ONE_M_TIME_S)
     );
     const isBeginingOfMonth = weekBegining.date() <= 7;
-    const elevation = Math.floor(Math.random() * (300 - 10 + 1) + 10 / 10);
+    const elevation = Math.floor(Math.random() * (300 - 10 + 1) + 10);
     const displayDate =
       i === 0 ? "This Week" : `${format(weekBegining)} - ${format(weekEnding)}`;
     const monthShort = weekBegining.format("MMM");

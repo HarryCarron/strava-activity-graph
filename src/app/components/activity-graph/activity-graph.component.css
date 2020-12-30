@@ -36,6 +36,9 @@
 .week-container {
   display: flex;
   flex-direction: row;
+  overflow: scroll;
+  overflow-y: hidden;
+  overflow-x: hidden;
   position: relative;
 }
 .graph-container {
