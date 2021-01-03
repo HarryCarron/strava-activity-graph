@@ -13,7 +13,7 @@ const UPPER_DISTANCE_LIMIT_M = 100000;
 /**
  * Distance lower limit in meters
  */
-const LOWER_DISTANCE_LIMIT_M = 50000;
+const LOWER_DISTANCE_LIMIT_M = 5000;
 
 interface WeekInfo {
   displayDate: string;
@@ -64,7 +64,6 @@ export class AppComponent implements OnInit {
   /**
    * Converts ellapsed time (seconds) to human readable format 00m 00m
    * @param seconds Ellpased time in seconds
-   *
    */
   private secondsToHoursMinutesHumanReadable(seconds: number): string {
     const date = new Date(1970, 0, 1);
@@ -131,5 +130,6 @@ export class AppComponent implements OnInit {
 
   ngOnInit() {
     this.data = this.buildTestData();
+    console.log(this.data);
   }
 }

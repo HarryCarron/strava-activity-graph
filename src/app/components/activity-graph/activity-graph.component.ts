@@ -9,11 +9,14 @@ import {
   AfterViewInit,
   Renderer2,
   EventEmitter,
-  Output
+  Output,
+  OnInit
 
 } from '@angular/core';
 import { TwelveWeekData, activityType } from './../../app.component';
 
+import { ActivityGraphService } from './activity-graph.service';
+import { UtilitiesService } from './../../utilities.service';
 const CIEL_PAD = 10;
 const GRID_PAD = 15;
 const FLOOR_PAD = 35;
@@ -32,13 +35,20 @@ const DYNAMIC_ELEMENT_COLOR = '#FC4C03';
   templateUrl: './activity-graph.component.html',
   styleUrls: ['./activity-graph.component.css'],
 })
-export class ActivityGraphComponent implements AfterViewInit {
+export class ActivityGraphComponent implements AfterViewInit, OnInit {
   currentlyDragging = false;
-  activePoint: [any, any];
 
-  activeTab = activityType.run;
+  activeTab = 0;
 
   tabOnBorderBottomColor = DYNAMIC_ELEMENT_COLOR;
+
+  private dynamicGraphNodes = {
+    activeLine: null,
+    activePoint: null,
+    path: null,
+    fill: null,
+    weekPoints: []
+  };
 
   xGraphTravel: number;
   yGraphTravel: number;
@@ -46,14 +56,23 @@ export class ActivityGraphComponent implements AfterViewInit {
   weekUnit: number;
   weekWidth: number;
   graphTravel: number;
-  constructor(private renderer: Renderer2) {}
+  constructor(
+    private renderer: Renderer2,
+    private aGraphSrv: ActivityGraphService,
+    private utils: UtilitiesService
+    ) {
+      aGraphSrv.renderer = renderer;
+      aGraphSrv.dynamicElementColor = DYNAMIC_ELEMENT_COLOR;
+    }
 
   private cielLimit: number;
   private floorLimit: number;
   private leftLimit: number;
   private rightLimit: number;
 
-  private activeWeekLine;
+  activityType = activityType;
+
+  private activeLine;
 
   activeData;
 
@@ -71,12 +90,6 @@ export class ActivityGraphComponent implements AfterViewInit {
       id: 2
     },
   ];
-
-  get highestWeeklyDistance(): string {
-    if (this.activeData && this.activeData.highestWeeklyDistance) {
-      return `${ (this.activeData.highestWeeklyDistance / 1000).toFixed(1) } km`;
-    }
-  }
 
   private weekPoints = [];
 
@@ -169,111 +182,68 @@ export class ActivityGraphComponent implements AfterViewInit {
 
   private initDynamicContent(): void {
 
-    const getActiveWeekPoint = () => {
-      const weekPoint = this.renderer.createElement('circle', 'svg');
-      this.renderer.setAttribute(weekPoint, 'r',              '3');
-      this.renderer.setAttribute(weekPoint, 'fill',           'white');
-      this.renderer.setAttribute(weekPoint, 'stroke',         DYNAMIC_ELEMENT_COLOR);
-      this.renderer.setAttribute(weekPoint, 'stroke-width',   '2');
-      return weekPoint;
-    };
-
-    /**
-     * The active point has two components, the solid orange center,
-     * and a low opacity larger point directly below it
-     */
-    const getActivePoints = (pulseAnimation?: boolean): [any, any] => {
-      const activeWeekPoint = this.renderer.createElement('circle',         'svg');
-      const activeWeekPointAccent = this.renderer.createElement('circle',   'svg');
-      this.renderer.setAttribute(activeWeekPoint, 'r',                      '4');
-      this.renderer.setAttribute(activeWeekPoint, 'fill',                   DYNAMIC_ELEMENT_COLOR);
-      this.renderer.setAttribute(activeWeekPoint, 'id',                     'active-point');
-
-      this.renderer.setAttribute(activeWeekPointAccent, 'fill',             DYNAMIC_ELEMENT_COLOR);
-      this.renderer.setAttribute(activeWeekPointAccent, 'fill-opacity',     '0.3');
-      this.renderer.setAttribute(activeWeekPointAccent, 'r',                '8');
-      this.renderer.setAttribute(activeWeekPointAccent, 'id',               'active-point-accent');
-
-      if (pulseAnimation) {
-        const animateSize = this.renderer.createElement('animate',          'svg');
-        this.renderer.setAttribute(animateSize, 'attributeName',            'r');
-        this.renderer.setAttribute(animateSize, 'values',                   '5;8');
-        this.renderer.setAttribute(animateSize, 'dur',                      '1s');
-        this.renderer.setAttribute(animateSize, 'repeatCount',              'indefinite');
-        this.renderer.appendChild(activeWeekPointAccent,                    animateSize);
-      }
-
-      return [activeWeekPointAccent, activeWeekPoint];
-    };
-
-    const getActiveWeekLine = () => { // todo: this method should only init and return activeWeekLine, coords should be set after init
-      const _activeLine = this.renderer.createElement('line',       'svg');
-      this.renderer.setAttribute(_activeLine, 'x1',                 this.rightLimit.toString());
-      this.renderer.setAttribute(_activeLine, 'y1',                 (this.floorLimit + this.cielLimit).toString());
-      this.renderer.setAttribute(_activeLine, 'x2',                 this.rightLimit.toString());
-      this.renderer.setAttribute(_activeLine, 'y2',                 this.cielLimit.toString());
-      this.renderer.setAttribute(_activeLine, 'stroke',             DYNAMIC_ELEMENT_COLOR);
-      this.renderer.setAttribute(_activeLine, 'stroke-width',       '2');
-      this.renderer.setAttribute(_activeLine, 'stroke-linecap',     'round');
-      this.renderer.setAttribute(_activeLine, 'id',                 'active-week-line');
-
-      return _activeLine;
-    };
-
-    const activeLine = getActiveWeekLine();
+    // active line
+    const activeLine = this.aGraphSrv.getActiveWeekLine();
     this.renderer.appendChild(this._graph, activeLine);
-    this.activeWeekLine = activeLine;
-    this.activePoint = getActivePoints();
+    this.dynamicGraphNodes.activeLine = activeLine;
 
-    let pathDVal = '';
+    // active point
+    const activePoint = this.aGraphSrv.getActivePoint();
+    this.dynamicGraphNodes.activePoint = activePoint;
+    this.renderer.appendChild(this._graph, activePoint[0]);
+    this.renderer.appendChild(this._graph, activePoint[1]);
 
-    const path = this.renderer.createElement('path', 'svg');
-    const startPath = 'M';
-    const lineToPath = 'L';
+    // path
+    const path = this.aGraphSrv.getPath();
+    this.dynamicGraphNodes.path = path;
+    this.renderer.appendChild(this._graph, path);
 
-    this.activeData[activityType[this.activeTab]].weeks.forEach((w, i) => {
-      const wp = getActiveWeekPoint();
+    // fill
+    const fill = this.aGraphSrv.getFill();
+    this.dynamicGraphNodes.fill = path;
+    this.renderer.appendChild(this._graph, path);
 
-      const yPointPosition = this.floorLimit;
+    // week points
+    this.dynamicGraphNodes.weekPoints = this.utils.arrayOfLength(12).map((_, i) => {
+      const wp = this.aGraphSrv.getWeekPoint();
+
+      const yPointPosition = this.floorLimit + this.cielLimit;
       const xPointPosition = (this.leftLimit + this.weekWidth * i);
-
-      let prefix;
-
-      if (i === 0) {
-        prefix = startPath;
-      } else {
-        prefix = lineToPath;
-      }
-      pathDVal += `${prefix + xPointPosition} ${yPointPosition} `;
       this.renderer.setAttribute(wp, 'cx', xPointPosition.toString());
       this.renderer.setAttribute(wp, 'cy', yPointPosition.toString());
-      this.weekPoints.push(wp);
+      this.renderer.appendChild(this._graph, wp);
+      return wp;
     });
 
-    this.renderer.setAttribute(path, 'stroke',            DYNAMIC_ELEMENT_COLOR);
-    this.renderer.setAttribute(path, 'fill',              'none');
-    this.renderer.setAttribute(path, 'stroke-width',      '2');
-    this.renderer.setAttribute(path, 'stroke-linecap',    'round');
-    this.renderer.setAttribute(path, 'd', pathDVal);
-    this.renderer.appendChild(this._graph, path);
+    let prefix;
 
-    const fill = this.renderer.createElement('path',      'svg');
-    this.renderer.setAttribute(fill, 'stroke',            'none');
-    this.renderer.setAttribute(fill, 'fill',              'url(#grad1)');
-    this.renderer.setAttribute(fill, 'stroke-width',      '0');
-    this.renderer.setAttribute(fill, 'd', pathDVal);
-    pathDVal += `L${this.rightLimit} ${this.floorLimit +
-      this.cielLimit} L${this.leftLimit} ${this.floorLimit + this.cielLimit} L${this.leftLimit} ${this.cielLimit}`;
-    this.renderer.setAttribute(fill, 'd', pathDVal);
-    this.renderer.appendChild(this._graph, fill);
-    this.renderer.appendChild(this._graph, path);
+    // if (i === 0) {
+    //   prefix = startPath;
+    // } else {
+    //   prefix = lineToPath;
+    // }
+    // pathDVal += `${prefix + xPointPosition} ${yPointPosition} `;
 
-    this.weekPoints.forEach(wp => this.renderer.appendChild(this._graph, wp));
+    // let pathDVal = '';
 
-    this.renderer.appendChild(this._graph, this.activePoint[0]);
-    this.renderer.appendChild(this._graph, this.activePoint[1]);
+    // const startPath = 'M';
+    // const lineToPath = 'L';
 
-    this.setActivePointPos(this.rightLimit, this.floorLimit);
+    // this.renderer.setAttribute(path, 'd', pathDVal);
+
+
+
+
+
+    // this.renderer.setAttribute(fill, 'd', pathDVal);
+
+
+    // pathDVal += `L${this.rightLimit} ${this.floorLimit +
+    //   this.cielLimit} L${this.leftLimit} ${this.floorLimit + this.cielLimit} L${this.leftLimit} ${this.cielLimit}`;
+    // this.renderer.setAttribute(fill, 'd', pathDVal);
+
+
+    // this.setActivePointPos(this.rightLimit, this.floorLimit);
 
   }
 
@@ -284,17 +254,15 @@ export class ActivityGraphComponent implements AfterViewInit {
   private mapWeekPoint(value) {
     return this.cielLimit + (this.floorLimit) -
     ((value / (this.activeData.highestWeeklyDistance - 0)) * this.floorLimit);
-
-
   }
 
   private setActivePointPos(x: number, y: number) {
-    this.activePoint.forEach(p => {
+    this.dynamicGraphNodes.activePoint.forEach(p => {
       this.renderer.setAttribute(p, 'cx', x.toString());
       this.renderer.setAttribute(p, 'cy', (this.cielLimit + y).toString());
     });
-    this.renderer.setAttribute(this.activeWeekLine, 'x1', x.toString());
-    this.renderer.setAttribute(this.activeWeekLine, 'x2', x.toString());
+    this.renderer.setAttribute(this.activeLine, 'x1', x.toString());
+    this.renderer.setAttribute(this.activeLine, 'x2', x.toString());
   }
 
   private validateX(x: number): number {
@@ -337,15 +305,15 @@ export class ActivityGraphComponent implements AfterViewInit {
 
   onTabSelect(tabId: activityType) {
     this.activeTab = tabId;
-    this.activeData = this.data[activityType[tabId]];
-    this.updateWeekPoints();
-
+    this.updateDynamicContent();
   }
 
-  private updateWeekPoints() {
-    this.weekPoints.forEach(wp => {
-      this.renderer.setAttribute
-    })
+  private updateDynamicContent() {
+    const data = this.activeData.weeks.map(d => this.mapWeekPoint(d.distance));
+    const d = this.dynamicGraphNodes;
+    d.weekPoints.forEach((wp, i) => {
+      this.renderer.setAttribute(wp, 'cy', data[i]);
+    });
   }
 
   private listenGlobal(): void {
@@ -357,13 +325,19 @@ export class ActivityGraphComponent implements AfterViewInit {
   }
 
   ngAfterViewInit() {
+
+
+  }
+
+  ngOnInit() {
     this.setDimensions();
     this.renderStaticContent();
-    this.onTabSelect(0);
     this.initDynamicContent();
     this.setDynamicContent();
+  }
 
-    this.setWeekUnit(295 * 11);
+  ngAfterViewChecked() {
+    this.onTabSelect(0);
   }
 
 }

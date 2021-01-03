@@ -1,3 +1,4 @@
 
 src/app/components/activity-graph/activity-graph.component.ts
+src/app/components/activity-graph/activity-graph.service.ts
 
