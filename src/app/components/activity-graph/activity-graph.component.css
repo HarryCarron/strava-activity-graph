@@ -1,5 +1,4 @@
 .activity-graph {
-  height: 250px;
   width: 295px;
   overflow: hidden;
   display: flex;
@@ -12,6 +11,26 @@
 .activity-graph-shadow {
   box-shadow: rgba(100, 100, 124, 0.25) 0px 6px 12px -2px,
     rgba(156, 156, 156, 0.3) 0px 3px 7px -3px;
+}
+.activity-tabs {
+  height: 60px;
+}
+
+.tab {
+  cursor: pointer;
+}
+.tab > i {
+  font-size: 1.5em;
+  color: #333333;
+}
+
+.tabOn {
+  background-color: #ffffff;
+  border-bottom: 3px solid #fc4c03;
+}
+
+.tabOff {
+  background-color: #f8f8f8;
 }
 
 .shadow-deep {

@@ -24,6 +24,18 @@ interface WeekInfo {
   monthShort: string;
 }
 
+interface ActivityData {
+  run: TwelveWeekData;
+  cycle: TwelveWeekData;
+  swim: TwelveWeekData;
+}
+
+export enum activityType {
+  run,
+  cycle,
+  swim,
+}
+
 export interface TwelveWeekData {
   weeks: WeekInfo[];
   highestWeeklyDistance: number;
@@ -37,7 +49,7 @@ export interface TwelveWeekData {
 export class AppComponent implements OnInit {
   constructor(private utilities: UtilitiesService) {}
 
-  data: TwelveWeekData;
+  data: ActivityData;
 
   /**
    * Generates random distance in meters
@@ -60,29 +72,23 @@ export class AppComponent implements OnInit {
     return `${date.getHours()}h ${date.getMinutes()}m`;
   }
 
-  private getWeek(i: number): WeekInfo {
+  private getWeek(i: number, isSwim: boolean): WeekInfo {
     const week = (offset: number) => moment().subtract(offset, "weeks");
     const format = (rawWeek) => rawWeek.format("D MMM");
     const weekBegining = week(i);
     const weekEnding = week(i - 1);
-    let distance;
     let elevation;
-    if (i === 0) {
-      // ! remove! testing purposes only!
-      distance = 0;
-      elevation = 0;
-    } else {
-      distance = this.getRandomDistance();
+    const distance = this.getRandomDistance();
+    if (!isSwim) {
       elevation = Math.floor(Math.random() * (300 - 10 + 1) + 10);
     }
+
     const time = this.secondsToHoursMinutesHumanReadable(
       Math.ceil(distance * ONE_M_TIME_S)
     );
     const isBeginingOfMonth = weekBegining.date() <= 7;
     const displayDate =
-      i === 0
-        ? "This Week"
-        : `${format(weekBegining)} - ${format(weekEnding)} = ${i}`; // ! remove!!!
+      i === 0 ? "This Week" : `${format(weekBegining)} - ${format(weekEnding)}`;
     const monthShort = weekBegining.format("MMM");
 
     return {
@@ -95,26 +101,32 @@ export class AppComponent implements OnInit {
     };
   }
 
-  private buildTestData(): TwelveWeekData {
+  private buildTestData(): ActivityData {
     let highestWeeklyDistance = 0;
+    const output = {};
 
-    const weeks = this.utilities
-      .arrayOfLength(12)
-      .map((weekNumber) => {
-        const week = this.getWeek(weekNumber);
+    this.utilities.arrayOfLength(3).forEach((e) => {
+      const weeks = this.utilities
+        .arrayOfLength(12)
+        .map((weekNumber) => {
+          const week = this.getWeek(weekNumber, e === 2);
 
-        if (week.distance > highestWeeklyDistance) {
-          highestWeeklyDistance = Math.ceil(week.distance);
-        }
+          if (week.distance > highestWeeklyDistance) {
+            highestWeeklyDistance = Math.ceil(week.distance);
+          }
 
-        return week;
-      })
-      .reverse();
+          return week;
+        })
+        .reverse();
 
-    return {
-      highestWeeklyDistance,
-      weeks,
-    };
+      const activity = {
+        highestWeeklyDistance,
+        weeks,
+      };
+
+      output[activityType[e]] = activity as TwelveWeekData;
+    });
+    return output as ActivityData;
   }
 
   ngOnInit() {

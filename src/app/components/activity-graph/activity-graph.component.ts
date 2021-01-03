@@ -12,7 +12,7 @@ import {
   Output
 
 } from '@angular/core';
-import { TwelveWeekData } from './../../app.component';
+import { TwelveWeekData, activityType } from './../../app.component';
 
 const CIEL_PAD = 10;
 const GRID_PAD = 15;
@@ -35,7 +35,11 @@ const DYNAMIC_ELEMENT_COLOR = '#FC4C03';
 export class ActivityGraphComponent implements AfterViewInit {
   currentlyDragging = false;
   activePoint: [any, any];
-  posFromLeft: number;
+
+  activeTab = activityType.run;
+
+  tabOnBorderBottomColor = DYNAMIC_ELEMENT_COLOR;
+
   xGraphTravel: number;
   yGraphTravel: number;
   weekContainerTravel: number;
@@ -51,8 +55,27 @@ export class ActivityGraphComponent implements AfterViewInit {
 
   private activeWeekLine;
 
+  activeData;
+
+  tabs = [
+    {
+      icon: 'fa-running',
+      id: 0
+    },
+    {
+      icon: 'fa-biking',
+      id: 1
+    },
+    {
+      icon: 'fa-swimming-pool',
+      id: 2
+    },
+  ];
+
   get highestWeeklyDistance(): string {
-    return `${ (this.data.highestWeeklyDistance / 1000).toFixed(1) } km`;
+    if (this.activeData && this.activeData.highestWeeklyDistance) {
+      return `${ (this.activeData.highestWeeklyDistance / 1000).toFixed(1) } km`;
+    }
   }
 
   private weekPoints = [];
@@ -77,6 +100,10 @@ export class ActivityGraphComponent implements AfterViewInit {
 
   @Input() data: TwelveWeekData;
 
+  get gridPositionFromLeftOfScreen() {
+    return this.graphContainer.nativeElement.getBoundingClientRect().left;
+  }
+
   private setDimensions(): void {
 
     const graphContainerWidth = this.graphContainer.nativeElement.offsetWidth;
@@ -85,20 +112,19 @@ export class ActivityGraphComponent implements AfterViewInit {
     this.yGraphTravel = graphContainerHeight - (GRID_PAD * 2);
     this.renderer.setAttribute(this._graph, 'height', graphContainerHeight);
     this.renderer.setAttribute(this._graph, 'width', graphContainerWidth.toString());
-    this.weekWidth = this.xGraphTravel / (this.data.weeks.length - 1);
+    this.weekWidth = this.xGraphTravel / (this.data[activityType[this.activeTab]].weeks.length - 1);
 
     this.cielLimit = CIEL_PAD;
     this.leftLimit = GRID_PAD;
     this.floorLimit = this.graphContainer.nativeElement.offsetHeight - FLOOR_PAD;
     this.rightLimit = graphContainerWidth - GRID_PAD;
-    this.posFromLeft = this.getLeftScreenPosition();
   }
 
   weeklyDistance(distance): string {
     return `${(distance / 1000).toFixed(1)} km`;
   }
 
-  private initStaticContent(): void {
+  private renderStaticContent(): void {
     const getLine = () => {
       const line = this.renderer.createElement('line', 'svg');
       this.renderer.setAttribute(line, 'stroke', GRID_COLOR);
@@ -115,7 +141,7 @@ export class ActivityGraphComponent implements AfterViewInit {
     );
     this.renderer.appendChild(this._graph, gridOuter);
 
-    this.data.weeks.forEach((week, i: number) => {
+    this.data[activityType[this.activeTab]].weeks.forEach((week, i: number) => {
 
       if (![0, 11].includes(i)) { // Week Line 0 and 11 are represented by the enclosing rectangle
         const line = getLine();
@@ -205,11 +231,10 @@ export class ActivityGraphComponent implements AfterViewInit {
     const startPath = 'M';
     const lineToPath = 'L';
 
-    this.data.weeks.forEach((w, i) => {
+    this.activeData[activityType[this.activeTab]].weeks.forEach((w, i) => {
       const wp = getActiveWeekPoint();
 
-      const yPointPosition = this.cielLimit + (this.floorLimit) -
-      ((w.distance / (this.data.highestWeeklyDistance - 0)) * this.floorLimit);
+      const yPointPosition = this.floorLimit;
       const xPointPosition = (this.leftLimit + this.weekWidth * i);
 
       let prefix;
@@ -252,6 +277,17 @@ export class ActivityGraphComponent implements AfterViewInit {
 
   }
 
+  private setDynamicContent() {
+
+  }
+
+  private mapWeekPoint(value) {
+    return this.cielLimit + (this.floorLimit) -
+    ((value / (this.activeData.highestWeeklyDistance - 0)) * this.floorLimit);
+
+
+  }
+
   private setActivePointPos(x: number, y: number) {
     this.activePoint.forEach(p => {
       this.renderer.setAttribute(p, 'cx', x.toString());
@@ -259,10 +295,6 @@ export class ActivityGraphComponent implements AfterViewInit {
     });
     this.renderer.setAttribute(this.activeWeekLine, 'x1', x.toString());
     this.renderer.setAttribute(this.activeWeekLine, 'x2', x.toString());
-  }
-
-  private getLeftScreenPosition() {
-    return this.graphContainer.nativeElement.getBoundingClientRect().left;
   }
 
   private validateX(x: number): number {
@@ -276,7 +308,7 @@ export class ActivityGraphComponent implements AfterViewInit {
   }
 
   private setWeekUnit(x: number): void {
-    const v = x * (this._weekContainer.offsetWidth * (this.data.weeks.length - 1));
+    const v = x * (this._weekContainer.offsetWidth * (this.activeData.weeks.length - 1));
     this._weekContainer.scrollLeft = v;
     // console.log(v);
 
@@ -290,16 +322,30 @@ export class ActivityGraphComponent implements AfterViewInit {
   }
 
   onMove({ clientX }) {
-    let relativeX = clientX - this.posFromLeft;
-    relativeX = this.validateX(relativeX);
-    const normalisedX = (relativeX - GRID_PAD) / this.xGraphTravel;
+    let graphX = clientX - this.gridPositionFromLeftOfScreen;
+    graphX = this.validateX(graphX);
+    console.log(graphX);
+    const normalisedX = (graphX - GRID_PAD) / (this.xGraphTravel);
     this.setWeekUnit(normalisedX);
-    this.setActivePointPos(relativeX, this.floorLimit);
+    this.setActivePointPos(graphX, this.floorLimit);
   }
 
   onClick(e): void {
     this.onMove(e);
     this.listenGlobal();
+  }
+
+  onTabSelect(tabId: activityType) {
+    this.activeTab = tabId;
+    this.activeData = this.data[activityType[tabId]];
+    this.updateWeekPoints();
+
+  }
+
+  private updateWeekPoints() {
+    this.weekPoints.forEach(wp => {
+      this.renderer.setAttribute
+    })
   }
 
   private listenGlobal(): void {
@@ -312,8 +358,11 @@ export class ActivityGraphComponent implements AfterViewInit {
 
   ngAfterViewInit() {
     this.setDimensions();
-    this.initStaticContent();
+    this.renderStaticContent();
+    this.onTabSelect(0);
     this.initDynamicContent();
+    this.setDynamicContent();
+
     this.setWeekUnit(295 * 11);
   }
 

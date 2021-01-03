@@ -1,13 +1,20 @@
 <div class="activity-graph rounded shadow-deep">
+  <div class="activity-tabs d-flex">
+    <ng-container
+      *ngFor="let tab of tabs"
+      [ngTemplateOutlet]="tabTmpl"
+      [ngTemplateOutletContext]="{ data: tab }"
+    ></ng-container>
+  </div>
   <div>
     <div class="w-100 week-container" #weekContainer>
-      <div class="week" *ngFor="let week of data.weeks">
+      <div class="week" *ngFor="let week of activeData?.weeks">
         <div class="px-4 p-4 h-100">
           <div class="display-week">
             {{ week.displayDate }}
           </div>
           <div class="d-flex pt-3">
-            <div class="pr-3 value-separator">
+            <div class="pe-3 value-separator">
               <div class="value-title text-muted">Distance</div>
               <div class="value-value pt-1">
                 {{ weeklyDistance(week.distance) }}
@@ -19,7 +26,7 @@
                 {{ week.time }}
               </div>
             </div>
-            <div class="pl-3">
+            <div class="ps-3" *ngIf="week.elevation">
               <div class="value-title text-muted">Elevation</div>
               <div class="value-value pt-1">
                 {{ week.elevation + " m" }}
@@ -52,3 +59,13 @@
     </svg>
   </div>
 </div>
+
+<ng-template #tabTmpl let-tabData="data">
+  <div
+    (click)="onTabSelect(tabData.id)"
+    class="tab flex-fill centerise h-100"
+    [ngClass]="activeTab === tabData.id ? 'tabOn' : 'tabOff'"
+  >
+    <i class="fas" [ngClass]="tabData.icon"></i>
+  </div>
+</ng-template>
