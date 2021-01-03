@@ -66,19 +66,23 @@ export class AppComponent implements OnInit {
     const weekBegining = week(i);
     const weekEnding = week(i - 1);
     let distance;
+    let elevation;
     if (i === 0) {
       // ! remove! testing purposes only!
       distance = 0;
+      elevation = 0;
     } else {
       distance = this.getRandomDistance();
+      elevation = Math.floor(Math.random() * (300 - 10 + 1) + 10);
     }
     const time = this.secondsToHoursMinutesHumanReadable(
       Math.ceil(distance * ONE_M_TIME_S)
     );
     const isBeginingOfMonth = weekBegining.date() <= 7;
-    const elevation = Math.floor(Math.random() * (300 - 10 + 1) + 10);
     const displayDate =
-      i === 0 ? "This Week" : `${format(weekBegining)} - ${format(weekEnding)}`;
+      i === 0
+        ? "This Week"
+        : `${format(weekBegining)} - ${format(weekEnding)} = ${i}`; // ! remove!!!
     const monthShort = weekBegining.format("MMM");
 
     return {
@@ -115,6 +119,5 @@ export class AppComponent implements OnInit {
 
   ngOnInit() {
     this.data = this.buildTestData();
-    console.log(this.data);
   }
 }

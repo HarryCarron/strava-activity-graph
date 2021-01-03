@@ -36,6 +36,7 @@
 .week-container {
   display: flex;
   flex-direction: row;
+  position: relative;
   overflow: scroll;
   overflow-y: hidden;
   overflow-x: hidden;
