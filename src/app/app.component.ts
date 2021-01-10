@@ -101,10 +101,10 @@ export class AppComponent implements OnInit {
   }
 
   private buildTestData(): ActivityData {
-    let highestWeeklyDistance = 0;
     const output = {};
 
     this.utilities.arrayOfLength(3).forEach((e) => {
+      let highestWeeklyDistance = 0;
       const weeks = this.utilities
         .arrayOfLength(12)
         .map((weekNumber) => {
@@ -130,6 +130,5 @@ export class AppComponent implements OnInit {
 
   ngOnInit() {
     this.data = this.buildTestData();
-    console.log(this.data);
   }
 }

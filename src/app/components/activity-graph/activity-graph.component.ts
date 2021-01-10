@@ -10,10 +10,13 @@ import {
   Renderer2,
   EventEmitter,
   Output,
-  OnInit
+  OnInit,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef
 
 } from '@angular/core';
 import { TwelveWeekData, activityType } from './../../app.component';
+
 
 import { ActivityGraphService } from './activity-graph.service';
 import { UtilitiesService } from './../../utilities.service';
@@ -34,6 +37,7 @@ const DYNAMIC_ELEMENT_COLOR = '#FC4C03';
   selector: 'app-activity-graph',
   templateUrl: './activity-graph.component.html',
   styleUrls: ['./activity-graph.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ActivityGraphComponent implements AfterViewInit, OnInit {
   currentlyDragging = false;
@@ -59,12 +63,13 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
   constructor(
     private renderer: Renderer2,
     private aGraphSrv: ActivityGraphService,
-    private utils: UtilitiesService
+    private utils: UtilitiesService,
+    private cd: ChangeDetectorRef
     ) {
       aGraphSrv.renderer = renderer;
       aGraphSrv.dynamicElementColor = DYNAMIC_ELEMENT_COLOR;
     }
-
+  private gridPathHelper = new GridPath();
   private cielLimit: number;
   private floorLimit: number;
   private leftLimit: number;
@@ -125,7 +130,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     this.yGraphTravel = graphContainerHeight - (GRID_PAD * 2);
     this.renderer.setAttribute(this._graph, 'height', graphContainerHeight);
     this.renderer.setAttribute(this._graph, 'width', graphContainerWidth.toString());
-    this.weekWidth = this.xGraphTravel / (this.data[activityType[this.activeTab]].weeks.length - 1);
+    this.weekWidth = this.xGraphTravel / (this.getSelectedActivity().weeks.length - 1);
 
     this.cielLimit = CIEL_PAD;
     this.leftLimit = GRID_PAD;
@@ -133,7 +138,10 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     this.rightLimit = graphContainerWidth - GRID_PAD;
   }
 
-  weeklyDistance(distance): string {
+  weeklyDistance(distance: number, highest?: boolean): string {
+    if (highest) {
+      distance = this.getSelectedActivity().highestWeeklyDistance;
+    }
     return `${(distance / 1000).toFixed(1)} km`;
   }
 
@@ -154,7 +162,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     );
     this.renderer.appendChild(this._graph, gridOuter);
 
-    this.data[activityType[this.activeTab]].weeks.forEach((week, i: number) => {
+    this.getSelectedActivity().weeks.forEach((week, i: number) => {
 
       if (![0, 11].includes(i)) { // Week Line 0 and 11 are represented by the enclosing rectangle
         const line = getLine();
@@ -184,6 +192,10 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
 
     // active line
     const activeLine = this.aGraphSrv.getActiveWeekLine();
+    this.renderer.setAttribute(activeLine, 'x1', this.rightLimit.toString());
+    this.renderer.setAttribute(activeLine, 'y1', (this.cielLimit + this.floorLimit).toString());
+    this.renderer.setAttribute(activeLine, 'x2', this.rightLimit.toString());
+    this.renderer.setAttribute(activeLine, 'y2', this.cielLimit.toString());
     this.renderer.appendChild(this._graph, activeLine);
     this.dynamicGraphNodes.activeLine = activeLine;
 
@@ -200,8 +212,8 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
 
     // fill
     const fill = this.aGraphSrv.getFill();
-    this.dynamicGraphNodes.fill = path;
-    this.renderer.appendChild(this._graph, path);
+    this.dynamicGraphNodes.fill = fill;
+    this.renderer.appendChild(this._graph, fill);
 
     // week points
     this.dynamicGraphNodes.weekPoints = this.utils.arrayOfLength(12).map((_, i) => {
@@ -215,45 +227,11 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
       return wp;
     });
 
-    let prefix;
-
-    // if (i === 0) {
-    //   prefix = startPath;
-    // } else {
-    //   prefix = lineToPath;
-    // }
-    // pathDVal += `${prefix + xPointPosition} ${yPointPosition} `;
-
-    // let pathDVal = '';
-
-    // const startPath = 'M';
-    // const lineToPath = 'L';
-
-    // this.renderer.setAttribute(path, 'd', pathDVal);
-
-
-
-
-
-    // this.renderer.setAttribute(fill, 'd', pathDVal);
-
-
-    // pathDVal += `L${this.rightLimit} ${this.floorLimit +
-    //   this.cielLimit} L${this.leftLimit} ${this.floorLimit + this.cielLimit} L${this.leftLimit} ${this.cielLimit}`;
-    // this.renderer.setAttribute(fill, 'd', pathDVal);
-
-
-    // this.setActivePointPos(this.rightLimit, this.floorLimit);
-
-  }
-
-  private setDynamicContent() {
-
   }
 
   private mapWeekPoint(value) {
     return this.cielLimit + (this.floorLimit) -
-    ((value / (this.activeData.highestWeeklyDistance - 0)) * this.floorLimit);
+    ((value / (this.getSelectedActivity().highestWeeklyDistance - 0)) * this.floorLimit);
   }
 
   private setActivePointPos(x: number, y: number) {
@@ -261,8 +239,9 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
       this.renderer.setAttribute(p, 'cx', x.toString());
       this.renderer.setAttribute(p, 'cy', (this.cielLimit + y).toString());
     });
-    this.renderer.setAttribute(this.activeLine, 'x1', x.toString());
-    this.renderer.setAttribute(this.activeLine, 'x2', x.toString());
+    const activeLine = this.dynamicGraphNodes.activeLine;
+    this.renderer.setAttribute(activeLine, 'x1', x.toString());
+    this.renderer.setAttribute(activeLine, 'x2', x.toString());
   }
 
   private validateX(x: number): number {
@@ -276,10 +255,8 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
   }
 
   private setWeekUnit(x: number): void {
-    const v = x * (this._weekContainer.offsetWidth * (this.activeData.weeks.length - 1));
+    const v = x * (this._weekContainer.offsetWidth * (this.getSelectedActivity().weeks.length - 1));
     this._weekContainer.scrollLeft = v;
-    // console.log(v);
-
   }
 
   private emitChangedWeek(week: number) {
@@ -308,41 +285,109 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     this.updateDynamicContent();
   }
 
+  getSelectedActivity() {
+    return this.data[activityType[this.activeTab]];
+  }
+
+  private renderWeekPoint(weekPointId: number, newY: number) {
+    const week = this.dynamicGraphNodes.weekPoints[weekPointId];
+    this.renderer.setAttribute(week, 'cy', newY.toString());
+  }
+
+  private updatePath(newX: number, newY: number): void {
+    this.gridPathHelper.add(newX, newY);
+  }
+
+  private renderPath(): void {
+    const path = this.dynamicGraphNodes.path;
+    this.renderer.setAttribute(path, 'd', null);
+    this.renderer.setAttribute(path, 'd', this.gridPathHelper.get());
+  }
+
+  private completePath(): string {
+    const trueFloor = this.floorLimit + this.cielLimit;
+    this.gridPathHelper.finish(trueFloor, this.rightLimit, this.leftLimit);
+    return this.gridPathHelper.get();
+  }
+
+  private renderFill(path: string): void {
+    const fill = this.dynamicGraphNodes.fill;
+    this.renderer.setAttribute(fill, 'd', null);
+    this.renderer.setAttribute(fill, 'd', path);
+  }
+
   private updateDynamicContent() {
-    const data = this.activeData.weeks.map(d => this.mapWeekPoint(d.distance));
-    const d = this.dynamicGraphNodes;
-    d.weekPoints.forEach((wp, i) => {
-      this.renderer.setAttribute(wp, 'cy', data[i]);
+    const mappedData = this.getSelectedActivity().weeks.map(d => this.mapWeekPoint(d.distance));
+
+    mappedData.forEach((yPos: number, i: number) => {
+      const x = this.leftLimit + (this.weekWidth * i);
+      this.renderWeekPoint(i, yPos);
+      this.updatePath(x, yPos);
     });
+    this.renderPath();
+    const completedPath = this.completePath();
+    this.renderFill(completedPath);
+
   }
 
   private listenGlobal(): void {
     const killMouseMoveListen = this.renderer.listen('document', 'mousemove', e => this.onMove(e));
-    const killMouseUpListen = this.renderer.listen('document', 'mouseup', e => {
+    const killMouseUpListen = this.renderer.listen('document', 'mouseup', _ => {
       killMouseMoveListen();
       killMouseUpListen();
     });
   }
 
-  ngAfterViewInit() {
+  getTabClass(id: number) {
+    return this.activeTab === id ? 'tabOn' : 'tabOff';
+  }
 
-
+  setActiveTab(tabId: number) {
+    this.activeTab = tabId;
+    this.updateDynamicContent();
+    this.cd.detectChanges();
   }
 
   ngOnInit() {
     this.setDimensions();
     this.renderStaticContent();
     this.initDynamicContent();
-    this.setDynamicContent();
+    this.setActivePointPos(this.rightLimit, this.floorLimit);
   }
 
-  ngAfterViewChecked() {
+  ngAfterViewInit() {
     this.onTabSelect(0);
   }
 
 }
-    // const currentWeek = Math.floor(this.xGraphTravel / (this.xGraphTravel / this.data.weeks.length - 1));
-    // const nextWeek = currentWeek + 1 <= 12 ? currentWeek + 1 : null;
-    // const lastWeek = currentWeek - 1 > 0 ? currentWeek - 1 : null;
 
-    // this.emitChangedWeek(currentWeek);
+// ! keep: implement later
+// const currentWeek = Math.floor(this.xGraphTravel / (this.xGraphTravel / this.data.weeks.length - 1));
+// const nextWeek = currentWeek + 1 <= 12 ? currentWeek + 1 : null;
+// const lastWeek = currentWeek - 1 > 0 ? currentWeek - 1 : null;
+
+// this.emitChangedWeek(currentWeek);
+
+class GridPath {
+
+  private path = '';
+  private completePath = false;
+
+  get(): string {
+    if (this.completePath) {
+      const pathCopy = this.path;
+      this.path = '';
+      this.completePath = false;
+      return pathCopy;
+    }
+    return this.path;
+  }
+  add(x: number, y: number) {
+    this.path += `${this.path ? 'L' : 'M' }${x} ${y}`;
+  }
+
+  finish(floorLimit: number, rightLimit: number, leftLimit: number) {
+    this.completePath = true;
+    this.path += `L${rightLimit} ${floorLimit} L${leftLimit} ${floorLimit}`;
+  }
+}

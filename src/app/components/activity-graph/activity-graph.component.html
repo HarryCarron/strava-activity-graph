@@ -42,9 +42,7 @@
     <div class="px-4 info-container">
       <div class="fw-bold text-dark">LAST 12 WEEKS</div>
       <div class="text-muted">
-        <!-- {{
-          weeklyDistance(data[activityType[activeTab]].highestWeeklyDistance)
-        }} -->
+        {{ weeklyDistance(null, true) }}
       </div>
     </div>
   </div>
@@ -67,9 +65,9 @@
 
 <ng-template #tabTmpl let-tabData="data">
   <div
-    (click)="activeTab = tabData.id"
+    (click)="setActiveTab(tabData.id)"
     class="tab flex-fill centerise h-100"
-    [class.tabOn]="activeTab === tabData.id"
+    [class]="getTabClass(tabData.id)"
   >
     <i class="fas" [class]="tabData.icon"></i>
   </div>
