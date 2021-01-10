@@ -28,13 +28,11 @@
 .tabOn {
   background-color: #ffffff;
   border-bottom: 3px solid #fc4c03;
-  font-size: 12px;
 }
 
 .tabOff {
   background-color: #f8f8f8;
   opacity: 0.6;
-  font-size: 8px;
 }
 
 .shadow-deep {

@@ -49,13 +49,25 @@ export class ActivityGraphService {
     return [activeWeekPointAccent, activeWeekPoint];
   }
 
+  private getAnimate(animateAttr: string) {
+    const animation = this.renderer.createElement('animate', 'svg');
+    this.renderer.setAttribute(animation, 'attributeName',  animateAttr);
+    this.renderer.setAttribute(animation, 'repeatCount',    'infinite');
+    this.renderer.setAttribute(animation, 'dur',    '0.5s');
+    return animation;
+  }
+
   public getWeekPoint() {
     const weekPoint = this.renderer.createElement('circle', 'svg');
+    const weekPointAnimate = this.getAnimate('cy');
     this.renderer.setAttribute(weekPoint, 'r',              '3');
     this.renderer.setAttribute(weekPoint, 'fill',           'white');
     this.renderer.setAttribute(weekPoint, 'stroke',         this.dynamicElementColor);
     this.renderer.setAttribute(weekPoint, 'stroke-width',   '2');
-    return weekPoint;
+
+    this.renderer.appendChild(weekPoint, weekPointAnimate);
+
+    return [weekPoint, weekPointAnimate];
   }
 
   public getPath() {
