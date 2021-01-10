@@ -7,6 +7,7 @@ export class ActivityGraphService {
 
   renderer;
   dynamicElementColor;
+  gridColor;
   constructor() {}
 
   public getActiveWeekLine() {
@@ -72,6 +73,28 @@ export class ActivityGraphService {
     this.renderer.setAttribute(fill, 'fill',              'url(#grad1)');
     this.renderer.setAttribute(fill, 'stroke-width',      '0');
     return fill;
+  }
+
+  public getBoundingRectangle() {
+    const boundingRect = this.renderer.createElement('rect', 'svg');
+    this.renderer.setAttribute(boundingRect, 'fill',     'none');
+    this.renderer.setAttribute(boundingRect, 'stroke',   this.gridColor);
+    return boundingRect;
+  }
+
+  public getGridLine() {
+    const line = this.renderer.createElement('line', 'svg');
+    this.renderer.setAttribute(line, 'stroke', this.gridColor);
+    return line;
+  }
+
+  public getText(text: string) {
+    const textContainer = this.renderer.createElement('text', 'svg');
+    const textNode = this.renderer.createText(text);
+    this.renderer.appendChild(textContainer,  textNode);
+    this.renderer.setStyle(textContainer,     'font-size',  '8px');
+    this.renderer.setAttribute(textContainer, 'fill',       '#A9A9A9');
+    return textContainer;
   }
 
 }

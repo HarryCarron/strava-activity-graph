@@ -68,6 +68,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     ) {
       aGraphSrv.renderer = renderer;
       aGraphSrv.dynamicElementColor = DYNAMIC_ELEMENT_COLOR;
+      aGraphSrv.gridColor = GRID_COLOR;
     }
   private gridPathHelper = new GridPath();
   private cielLimit: number;
@@ -138,52 +139,46 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     this.rightLimit = graphContainerWidth - GRID_PAD;
   }
 
-  weeklyDistance(distance: number, highest?: boolean): string {
-    if (highest) {
-      distance = this.getSelectedActivity().highestWeeklyDistance;
-    }
-    return `${(distance / 1000).toFixed(1)} km`;
+  highestWeeklyDistance(): string {
+    return `${this.formatKMs(this.getSelectedActivity().highestWeeklyDistance)} km`;
+  }
+
+  formatKMs(KMs: number): string {
+    return (KMs / 1000).toFixed(1);
+  }
+
+  weeklyDistance(distance: number): string {
+    return `${this.formatKMs(distance)} km`;
   }
 
   private renderStaticContent(): void {
-    const getLine = () => {
-      const line = this.renderer.createElement('line', 'svg');
-      this.renderer.setAttribute(line, 'stroke', GRID_COLOR);
-      return line;
-    };
 
-    const gridOuter = this.renderer.createElement('rect', 'svg');
-    this.renderer.setAttribute(gridOuter, 'x',        this.leftLimit.toString());
-    this.renderer.setAttribute(gridOuter, 'y',        this.cielLimit.toString());
-    this.renderer.setAttribute(gridOuter, 'stroke',   GRID_COLOR);
-    this.renderer.setAttribute(gridOuter, 'fill',     'none');
-    this.renderer.setAttribute(gridOuter, 'width',    this.xGraphTravel.toString());
-    this.renderer.setAttribute(gridOuter, 'height',   this.floorLimit.toString()
-    );
-    this.renderer.appendChild(this._graph, gridOuter);
+    const boundingRect = this.aGraphSrv.getBoundingRectangle();
+
+    this.renderer.setAttribute(boundingRect, 'x',        this.leftLimit.toString());
+    this.renderer.setAttribute(boundingRect, 'y',        this.cielLimit.toString());
+    this.renderer.setAttribute(boundingRect, 'width',    this.xGraphTravel.toString());
+    this.renderer.setAttribute(boundingRect, 'height',   this.floorLimit.toString());
+    this.renderer.appendChild(this._graph, boundingRect);
 
     this.getSelectedActivity().weeks.forEach((week, i: number) => {
 
-      if (![0, 11].includes(i)) { // Week Line 0 and 11 are represented by the enclosing rectangle
-        const line = getLine();
+      if (![0, 11].includes(i)) {
+        const gridLine = this.aGraphSrv.getGridLine();
         const x = (this.leftLimit + (this.weekWidth * i));
-        this.renderer.setAttribute(line, 'stroke',  GRID_COLOR);
-        this.renderer.setAttribute(line, 'x1',      x.toString());
-        this.renderer.setAttribute(line, 'y1',      (this.cielLimit + this.floorLimit).toString());
-        this.renderer.setAttribute(line, 'x2',      x.toString());
-        this.renderer.setAttribute(line, 'y2',      (this.cielLimit).toString());
-        this.renderer.appendChild(this._graph,      line);
+        this.renderer.setAttribute(gridLine, 'x1',      x.toString());
+        this.renderer.setAttribute(gridLine, 'y1',      (this.cielLimit + this.floorLimit).toString());
+        this.renderer.setAttribute(gridLine, 'x2',      x.toString());
+        this.renderer.setAttribute(gridLine, 'y2',      (this.cielLimit).toString());
+        this.renderer.appendChild(this._graph, gridLine);
       }
 
       if (week.isBeginingOfMonth) {
-        const textContainer = this.renderer.createElement('text', 'svg');
-        const text = this.renderer.createText(week.monthShort.toUpperCase());
-        this.renderer.appendChild(textContainer,  text);
-        this.renderer.setAttribute(textContainer, 'x',          (this.leftLimit + this.weekWidth * i - 10).toString());
-        this.renderer.setAttribute(textContainer, 'y',          (this.floorLimit + 25).toString());
-        this.renderer.setStyle(textContainer,     'font-size',  '8px');
-        this.renderer.setAttribute(textContainer, 'fill',       '#A9A9A9');
-        this.renderer.appendChild(this._graph, textContainer);
+        const text = this.aGraphSrv.getText(week.monthShort.toUpperCase());
+        this.renderer.setAttribute(text, 'x',          (this.leftLimit + this.weekWidth * i - 10).toString());
+        this.renderer.setAttribute(text, 'y',          (this.floorLimit + 25).toString());
+
+        this.renderer.appendChild(this._graph, text);
       }
     });
   }
