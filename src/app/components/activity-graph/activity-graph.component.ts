@@ -21,7 +21,7 @@ import { TwelveWeekData, activityType } from './../../app.component';
 import { ActivityGraphService } from './activity-graph.service';
 import { UtilitiesService } from './../../utilities.service';
 const CIEL_PAD = 10;
-const GRID_PAD = 15;
+const GRID_PAD = 16;
 const FLOOR_PAD = 35;
 
 interface WeekWithOffset {
@@ -70,11 +70,13 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
       aGraphSrv.dynamicElementColor = DYNAMIC_ELEMENT_COLOR;
       aGraphSrv.gridColor = GRID_COLOR;
     }
-  private gridPathHelper = new GridPath();
+  private gridPathHelper: GridPath;
   private cielLimit: number;
   private floorLimit: number;
   private leftLimit: number;
   private rightLimit: number;
+
+  private mappedDataCache: number[] = [];
 
   activityType = activityType;
 
@@ -165,11 +167,11 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
 
       if (![0, 11].includes(i)) {
         const gridLine = this.aGraphSrv.getGridLine();
-        const x = (this.leftLimit + (this.weekWidth * i));
-        this.renderer.setAttribute(gridLine, 'x1',      x.toString());
-        this.renderer.setAttribute(gridLine, 'y1',      (this.cielLimit + this.floorLimit).toString());
-        this.renderer.setAttribute(gridLine, 'x2',      x.toString());
-        this.renderer.setAttribute(gridLine, 'y2',      (this.cielLimit).toString());
+        const x = this.leftLimit + (this.weekWidth * i);
+        this.renderer.setAttribute(gridLine, 'x1',      Math.floor(x).toString());
+        this.renderer.setAttribute(gridLine, 'y1',      Math.floor(this.cielLimit + this.floorLimit).toString());
+        this.renderer.setAttribute(gridLine, 'x2',      Math.floor(x).toString());
+        this.renderer.setAttribute(gridLine, 'y2',      Math.floor(this.cielLimit).toString());
         this.renderer.appendChild(this._graph, gridLine);
       }
 
@@ -203,21 +205,23 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     // path
     const path = this.aGraphSrv.getPath();
     this.dynamicGraphNodes.path = path;
-    this.renderer.appendChild(this._graph, path);
+    const floored = this.gridPathHelper.getFloored();
+    this.renderer.setAttribute(path[0], 'd', floored);
+    this.renderer.appendChild(this._graph, path[0]);
 
     // fill
     const fill = this.aGraphSrv.getFill();
     this.dynamicGraphNodes.fill = fill;
-    this.renderer.appendChild(this._graph, fill);
+    this.renderer.appendChild(this._graph, fill[0]);
 
     // week points
-    this.dynamicGraphNodes.weekPoints = this.utils.arrayOfLength(12).map((_, i) => {
+    this.dynamicGraphNodes.weekPoints = this.getSelectedActivity().weeks.map((_, i) => {
       const wp = this.aGraphSrv.getWeekPoint();
 
       const yPointPosition = this.floorLimit + this.cielLimit;
       const xPointPosition = (this.leftLimit + this.weekWidth * i);
-      this.renderer.setAttribute(wp[0], 'cx', xPointPosition.toString());
-      this.renderer.setAttribute(wp[0], 'cy', yPointPosition.toString());
+      this.renderer.setAttribute(wp[0], 'cx', Math.floor(xPointPosition).toString());
+      this.renderer.setAttribute(wp[0], 'cy', Math.floor(yPointPosition).toString());
       this.renderer.appendChild(this._graph, wp[0]);
       return wp;
     });
@@ -251,6 +255,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
 
   private setWeekUnit(x: number): void {
     const v = x * (this._weekContainer.offsetWidth * (this.getSelectedActivity().weeks.length - 1));
+    console.log('weekunit:' + v);
     this._weekContainer.scrollLeft = v;
   }
 
@@ -265,9 +270,9 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     let graphX = clientX - this.gridPositionFromLeftOfScreen;
     graphX = this.validateX(graphX);
     const normalisedX = (graphX - GRID_PAD) / (this.xGraphTravel);
+    console.log('normalised:' + normalisedX);
     this.setWeekUnit(normalisedX);
     this.setActivePointPos(graphX, this.floorLimit);
-    // const currentWeek = Math.floor(this.xGraphTravel / (this.xGraphTravel / this.getSelectedActivity().length - 1));
     // const nextWeek = currentWeek + 1 <= 12 ? currentWeek + 1 : null;
     // const lastWeek = currentWeek - 1 > 0 ? currentWeek - 1 : null;
 
@@ -293,12 +298,16 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     return this.data[activityType[this.activeTab]];
   }
 
-  private renderWeekPoint(weekPointId: number, newY: number) {
+  private renderWeekPoint(weekPointId: number, newY: number, oldY?: number) {
     const week = this.dynamicGraphNodes.weekPoints[weekPointId][0];
     const aniWeek = this.dynamicGraphNodes.weekPoints[weekPointId][1];
-    this.renderer.setAttribute(week, 'cy', newY.toString());
-    this.renderer.setAttribute(aniWeek, 'from', this.floorLimit.toString());
-    this.renderer.setAttribute(aniWeek, 'to', newY.toString());
+    this.renderer.setAttribute(week, 'cy', Math.floor(newY).toString());
+    if (!oldY) {
+      this.renderer.setAttribute(aniWeek, 'from', Math.floor(this.floorLimit).toString());
+    } else {
+      this.renderer.setAttribute(aniWeek, 'from', Math.floor(oldY).toString());
+    }
+    this.renderer.setAttribute(aniWeek, 'to', Math.floor(newY).toString());
     aniWeek.beginElement();
   }
 
@@ -306,41 +315,36 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     this.gridPathHelper.add(newX, newY);
   }
 
-  private renderPath(): void {
-    const path = this.dynamicGraphNodes.path;
-    this.renderer.setAttribute(path, 'd', this.gridPathHelper.get());
+  private renderPathAndFill(): void {
+    const pathAnimation = this.dynamicGraphNodes.path[1];
+    const fillAnimation = this.dynamicGraphNodes.fill[1];
+
+    const oldPath = this.gridPathHelper.getPreviousPath();
+    const currentPath = this.gridPathHelper.getCurrentPath();
+    const oldFill = this.gridPathHelper.completePreviousFill();
+    const currentFill = this.gridPathHelper.completeCurrentFill();
+
+    this.renderer.setAttribute(pathAnimation, 'from', oldPath);
+    this.renderer.setAttribute(pathAnimation, 'to', currentPath);
+
+    this.renderer.setAttribute(fillAnimation, 'from', oldFill);
+    this.renderer.setAttribute(fillAnimation, 'to', currentFill);
+    pathAnimation.beginElement();
+    fillAnimation.beginElement();
   }
 
-  private completePath(): string {
-    const trueFloor = this.floorLimit + this.cielLimit;
-    this.gridPathHelper.finish(trueFloor, this.rightLimit, this.leftLimit);
-    return this.gridPathHelper.get();
-  }
+  private updateDynamicContent(data: number[], reset: boolean) {
 
-  private renderFill(path: string): void {
-    const fill = this.dynamicGraphNodes.fill;
-    this.renderer.setAttribute(fill, 'd', path);
-  }
-
-  private updateDynamicContent(data, reset: boolean) {
-
-    if (reset) {
-      const resetData = this.utils.arrayOfLength(12).map(v => this.floorLimit);
-      this.updateDynamicContent(resetData, false);
-      this.updateDynamicContent(data, false);
-    }
-
-    // const mappedData = this.getSelectedActivity().weeks.map(d => this.mapWeekPoint(d.distance));
-    // mappedData.forEach((yPos: number, i: number) => {
     data.forEach((yPos: number, i: number) => {
-      const x = this.leftLimit + (this.weekWidth * i);
-      this.renderWeekPoint(i, yPos);
-      this.updatePath(x, yPos);
-    });
-    this.renderPath();
-    const completedPath = this.completePath();
-    this.renderFill(completedPath);
 
+      const xPos = this.leftLimit + (this.weekWidth * i);
+      this.renderWeekPoint(i, yPos, this.mappedDataCache[i]);
+      this.updatePath(xPos, yPos);
+      this.mappedDataCache[i] = yPos;
+    });
+    this.renderPathAndFill();
+    this.gridPathHelper.cacheCurrentPath();
+    this.gridPathHelper.clearCurrentPath();
   }
 
   private listenGlobal(): void {
@@ -362,11 +366,23 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     this.cd.detectChanges();
   }
 
+  private initGridPathHelper() {
+    this.gridPathHelper = new GridPath(
+      this.leftLimit,
+      this.weekWidth,
+      this.cielLimit + this.floorLimit,
+      this.getSelectedActivity().weeks.length,
+      this.rightLimit,
+      this.leftLimit
+      );
+  }
+
   ngOnInit() {
     this.setDimensions();
+    this.initGridPathHelper();
     this.renderStaticContent();
     this.initDynamicContent();
-    this.setActivePointPos(this.rightLimit, this.floorLimit);
+    this.setActivePointPos(this.leftLimit, this.floorLimit);
   }
 
   ngAfterViewInit() {
@@ -384,29 +400,80 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
 
 class GridPath {
 
+  constructor(
+    leftOffset: number,
+    weekWidth: number,
+    floor: number,
+    points: number,
+    left: number,
+    right: number,
+    ) {
+    this.leftOffset = leftOffset;
+    this.weekWidth = weekWidth;
+    this.floor = floor;
+    this.points = points;
+    this.previousPath = this.getFloored();
+    this.left = left;
+    this.right = right;
+  }
+
+  private leftOffset: number;
+  private weekWidth: number;
+  private floor: number;
+  private points: number;
+  private left: number;
+  private right: number;
+
   private path = '';
-  private completePath = false;
+  private previousPath = '';
+
+  public get hasPreviousPath() {
+    return !!this.previousPath;
+  }
 
   get(): string {
-    if (this.completePath) {
-      const pathCopy = this.path;
-      this.path = '';
-      this.completePath = false;
-      return pathCopy;
-    }
+    const pathCopy = this.path;
+    return pathCopy;
+  }
+
+  clearCurrentPath() {
+    this.path = '';
+  }
+
+  cacheCurrentPath(): void {
+    this.previousPath = this.path;
+  }
+
+  getPreviousPath(): string {
+    return this.previousPath;
+  }
+
+  getCurrentPath(): string {
     return this.path;
   }
 
-  getFloored(floor: number) {
-    const length = this.path.split('  ');
-    return Array.from(length).map((v, i) => `${(i === 0 ? 'M' : 'L')}${floor} ${floor}  `).join('');
-  }
-  add(x: number, y: number) {
-    this.path += `${this.path ? 'L' : 'M' }${x} ${y}  `;
+  getForAnimation(): [string, string] {
+    return [
+      this.path,
+      this.previousPath || this.getFloored()
+    ];
   }
 
-  finish(floorLimit: number, rightLimit: number, leftLimit: number) {
-    this.completePath = true;
-    this.path += `L${rightLimit} ${floorLimit} L${leftLimit} ${floorLimit}`;
+  completePreviousFill(): string {
+    return this.previousPath + `L${this.left} ${this.floor} L${this.right} ${this.floor}`;
   }
+
+  completeCurrentFill(): string {
+    return this.path + `L${this.left} ${this.floor} L${this.right} ${this.floor}`;
+  }
+
+  getFloored(): string {
+    return Array.from({length: this.points})
+    .map((v, i) => `${(i === 0 ? 'M ' : 'L ')}${(this.weekWidth * i) + this.leftOffset},${this.floor}  `).join('');
+  }
+
+  add(x: number, y: number) {
+    this.path += `${this.path ? 'L ' : 'M ' }${x},${y}  `;
+  }
+
 }

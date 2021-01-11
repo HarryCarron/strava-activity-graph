@@ -50,10 +50,11 @@ export class ActivityGraphService {
   }
 
   private getAnimate(animateAttr: string) {
-    const animation = this.renderer.createElement('animate', 'svg');
-    this.renderer.setAttribute(animation, 'attributeName',  animateAttr);
-    this.renderer.setAttribute(animation, 'repeatCount',    'infinite');
-    this.renderer.setAttribute(animation, 'dur',    '0.5s');
+    const animation = this.renderer.createElement('animate',  'svg');
+    this.renderer.setAttribute(animation, 'attributeName',    animateAttr);
+    this.renderer.setAttribute(animation, 'repeatCount',      'infinite');
+    this.renderer.setAttribute(animation, 'dur',              '0.5s');
+    this.renderer.setAttribute(animation, 'fill',             'freeze');
     return animation;
   }
 
@@ -72,11 +73,14 @@ export class ActivityGraphService {
 
   public getPath() {
     const path = this.renderer.createElement('path', 'svg');
+    const pathAnimation = this.getAnimate('d');
+
     this.renderer.setAttribute(path, 'stroke',            this.dynamicElementColor);
     this.renderer.setAttribute(path, 'fill',              'none');
     this.renderer.setAttribute(path, 'stroke-width',      '2');
     this.renderer.setAttribute(path, 'stroke-linecap',    'round');
-    return path;
+    this.renderer.appendChild(path, pathAnimation);
+    return [path, pathAnimation];
   }
 
   public getFill() {
@@ -84,7 +88,10 @@ export class ActivityGraphService {
     this.renderer.setAttribute(fill, 'stroke',            'none');
     this.renderer.setAttribute(fill, 'fill',              'url(#grad1)');
     this.renderer.setAttribute(fill, 'stroke-width',      '0');
-    return fill;
+
+    const fillAnimation = this.getAnimate('d');
+    this.renderer.appendChild(fill, fillAnimation);
+    return [fill, fillAnimation];
   }
 
   public getBoundingRectangle() {
