@@ -13,10 +13,6 @@ export class ActivityGraphService {
   public getActiveWeekLine() {
     // todo: this method should only init and return activeWeekLine, coords should be set after init
     const activeLine = this.renderer.createElement('line',        'svg');
-    // this.renderer.setAttribute(_activeLine, 'x1',                 this.rightLimit.toString());
-    // this.renderer.setAttribute(_activeLine, 'y1',                 (this.floorLimit + this.cielLimit).toString());
-    // this.renderer.setAttribute(_activeLine, 'x2',                 this.rightLimit.toString());
-    // this.renderer.setAttribute(_activeLine, 'y2',                 this.cielLimit.toString());
     this.renderer.setAttribute(activeLine, 'stroke',              this.dynamicElementColor);
     this.renderer.setAttribute(activeLine, 'stroke-width',        '2');
     this.renderer.setAttribute(activeLine, 'stroke-linecap',      'round');
@@ -101,9 +97,13 @@ export class ActivityGraphService {
     return boundingRect;
   }
 
-  public getGridLine() {
+  public getGridLine(isCheckLine?: boolean) {
     const line = this.renderer.createElement('line', 'svg');
-    this.renderer.setAttribute(line, 'stroke', this.gridColor);
+    this.renderer.setAttribute(line, 'stroke', isCheckLine ? 'blue' : this.gridColor);
+    if (isCheckLine) {
+      this.renderer.setAttribute(line, 'stroke-width', '2');
+    }
+
     return line;
   }
 

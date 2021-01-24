@@ -1,5 +1,5 @@
 .activity-graph {
-  width: 400px;
+  width: 420px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -53,15 +53,14 @@
   height: 30%;
 }
 
-.week-container {
-  display: flex;
-  flex-direction: row;
-  position: relative;
-  overflow: scroll;
-  overflow-y: hidden;
-  overflow-x: hidden;
-  position: relative;
+.week-container-outer {
+  overflow: hidden;
+  overflow-y: scroll;
 }
+.week-container-outer::-webkit-scrollbar {
+  display: none;
+}
+
 .graph-container {
   height: 30%;
 }

@@ -15,7 +15,9 @@ const UPPER_DISTANCE_LIMIT_M = 100000;
  */
 const LOWER_DISTANCE_LIMIT_M = 5000;
 
-interface WeekInfo {
+export const NUMBER_OF_WEEKS = 12;
+
+export interface WeekInfo {
   displayDate: string;
   isBeginingOfMonth: boolean;
   distance: number;
@@ -106,7 +108,7 @@ export class AppComponent implements OnInit {
     this.utilities.arrayOfLength(3).forEach((e) => {
       let highestWeeklyDistance = 0;
       const weeks = this.utilities
-        .arrayOfLength(12)
+        .arrayOfLength(NUMBER_OF_WEEKS)
         .map((weekNumber) => {
           const week = this.getWeek(weekNumber, e === 2);
 
