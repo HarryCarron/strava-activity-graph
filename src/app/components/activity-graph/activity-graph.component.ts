@@ -154,7 +154,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
   }
 
   formatKMs(KMs: number): string {
-    return (KMs / 1000).toFixed(1);
+    return (KMs / 1000).toFixed();
   }
 
   weeklyDistance(distance: number): string {
@@ -165,7 +165,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
 
     const boundingRect = this.aGraphSrv.getBoundingRectangle();
 
-    this.renderer.setAttribute(boundingRect, 'x',        this.leftLimit.toString());
+    this.renderer.setAttribute(boundingRect, 'x',        Math.round(this.leftLimit).toString());
     this.renderer.setAttribute(boundingRect, 'y',        this.cielLimit.toString());
     this.renderer.setAttribute(boundingRect, 'width',    this.graphInnerWidth.toString());
     this.renderer.setAttribute(boundingRect, 'height',   this.floorLimit.toString());
@@ -176,9 +176,9 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
       if (![0, 11].includes(i)) { // todo: get values from weeks array /no hardcoding
         const gridLine = this.aGraphSrv.getGridLine();
         const x = this.leftLimit + (this.weekWidth * i);
-        this.renderer.setAttribute(gridLine, 'x1',      x.toString());
+        this.renderer.setAttribute(gridLine, 'x1',      Math.round(x).toString());
         this.renderer.setAttribute(gridLine, 'y1',      (this.cielLimit + this.floorLimit).toString());
-        this.renderer.setAttribute(gridLine, 'x2',      x.toString());
+        this.renderer.setAttribute(gridLine, 'x2',      Math.round(x).toString());
         this.renderer.setAttribute(gridLine, 'y2',      this.cielLimit.toString());
         this.renderer.appendChild(this._graph, gridLine);
       }
@@ -197,9 +197,9 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
 
     // active line
     const activeLine = this.aGraphSrv.getActiveWeekLine();
-    this.renderer.setAttribute(activeLine, 'x1', this.rightLimit.toString());
+    this.renderer.setAttribute(activeLine, 'x1', Math.round(this.rightLimit).toString());
     this.renderer.setAttribute(activeLine, 'y1', (this.cielLimit + this.floorLimit).toString());
-    this.renderer.setAttribute(activeLine, 'x2', this.rightLimit.toString());
+    this.renderer.setAttribute(activeLine, 'x2', Math.round(this.rightLimit).toString());
     this.renderer.setAttribute(activeLine, 'y2', this.cielLimit.toString());
     this.renderer.appendChild(this._graph, activeLine);
     this.dynamicGraphNodes.activeLine = activeLine;
@@ -250,10 +250,12 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     ];
   }
 
-  private setCursorPosition(normalisedX: number) {
+  private setCursorPosition(x: number, isGraphCoordinate?: boolean) {
 
+    if (!isGraphCoordinate) {
+      x = (x * this.graphInnerWidth) + GRID_PAD;
+    }
     const y = this.floorLimit; // ! remove TIDY
-    const x = (normalisedX * this.graphInnerWidth) + GRID_PAD;
     const [previousWeek, currentWeek, nextWeek] = this.getWeekUnitOffsets(this.currentWeekEmissionHelper.current);
     const a = this.mappedWeekData[currentWeek];
 
@@ -292,7 +294,14 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     this._weekContainer.scrollLeft = x;
   }
 
-  onMouseDrop({clientX}) {}
+  onMouseDrop({clientX}) {
+
+    const currentWeek = this.currentWeekEmissionHelper.current;
+    this.setWeekContainerScroll(
+      this._weekContainer.offsetWidth  * currentWeek, true
+    );
+    this.setCursorPosition(currentWeek * this.weekWidth + GRID_PAD, true);
+  }
 
   onMove({ clientX }) {
     const normalisedX = ((clientX - this.gridPositionFromLeftOfScreen) - GRID_PAD) / this.graphInnerWidth;
@@ -308,17 +317,20 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     }
   }
 
-  private getCurrentlyFocusedWeek(graphX: number) {
+  private getCurrentlyFocusedWeek(normalisedX: number) {
 
-    const currentWeek = Math.floor(((graphX * this.weekWidth) + GRID_PAD) /
+    const currentWeek = Math.floor(((normalisedX * this.graphInnerWidth)) /
     (this.graphInnerWidth / (this.getSelectedActivity().weeks.length - 1)));
     const shouldEmit = this.currentWeekEmissionHelper.shouldEmit(currentWeek);
 
     if (shouldEmit) {
       this.currentWeek.emit(currentWeek);
+      console.log(currentWeek * this._weekContainer.offsetWidth, `${currentWeek} * ${this._weekContainer.offsetWidth}`);
+      // this.drawCheckLine(x, currentWeek);
       return currentWeek;
     }
   }
+
 
   drawCheckLine(x, currentWeek) {
     const line = this.aGraphSrv.getGridLine(true);
@@ -432,7 +444,6 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     this.initGridPathHelper();
     this.renderStaticContent();
     this.initDynamicContent();
-
   }
 
   ngAfterViewInit() {
