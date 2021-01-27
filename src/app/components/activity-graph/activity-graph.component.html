@@ -65,7 +65,7 @@
 
 <ng-template #tabTmpl let-tabData="data">
   <div
-    (click)="setActiveTab(tabData.id)"
+    (click)="onSetActiveTab(tabData.id)"
     class="tab flex-fill centerise h-100"
     [class]="getTabClass(tabData.id)"
   >
