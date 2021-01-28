@@ -268,7 +268,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
      * when true, cursor point will travel up graph: vice vera
      */
     const yMovingDirection = currentWeekValue >= nextWeekValue;
-    const yTravelUnit = Math.abs(currentWeekValue - nextWeekValue);
+    const yTravelUnit = Math.abs(currentWeekValue - nextWeekValue || 0);
     const normalised = Math.floor(graphX - (this.weekWidth * currentWeek + GRID_PAD)) / this.weekWidth;
 
 
@@ -383,6 +383,19 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
       );
   }
 
+  private setWeek(normalisedX: number): void {
+    const newFlooredWeek = this.getNewFlooredWeekNumber(normalisedX);
+
+    this.setWeekContainerScroll(normalisedX);
+    this.setCursorPosition(normalisedX);
+
+    if (newFlooredWeek) {
+      this.setWeekContainerScroll(
+        this._weekContainer.offsetWidth  * newFlooredWeek, true
+      );
+    }
+  }
+
   private getNormalisedXFromClientX(clientX: number): number {
     return ((clientX - this.gridPositionFromLeftOfScreen) - GRID_PAD) / this.graphInnerWidth;
   }
@@ -402,18 +415,8 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
   }
 
   onMove(clientX: number) {
-
     const normalisedX = this.getNormalisedXFromClientX(clientX);
-    const newFlooredWeek = this.getNewFlooredWeekNumber(normalisedX);
-
-    this.setWeekContainerScroll(normalisedX);
-    this.setCursorPosition(normalisedX);
-
-    if (newFlooredWeek) {
-      this.setWeekContainerScroll(
-        this._weekContainer.offsetWidth  * newFlooredWeek, true
-      );
-    }
+    this.setWeek(normalisedX);
   }
 
   onClick({ clientX }): void {
@@ -443,6 +446,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
 
   ngAfterViewInit() {
     this.onTabSelect(0);
+    this.setWeek(1);
   }
 
 }
