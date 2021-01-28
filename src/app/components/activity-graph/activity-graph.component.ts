@@ -1,8 +1,3 @@
-// todo: refactor static / dynamic conent methods to seperate init and render methods.
-// todo: dont increment should emit week number : causes bugs elsewhere
-// todo: use reference comparison to check for WeekOffset change
-// todo: declare graph SVG elements in template and access via ref.
-
 import {
   Component,
   Input,
@@ -71,12 +66,20 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
   };
 
   graphInnerWidth: number;
-  yGraphTravel: number;
-  weekContainerTravel: number;
-  weekUnit: number;
+  /**
+   * The width in px of one week sector
+   */
   weekWidth: number;
-  graphTravel: number;
+
+  /**
+   * Y position of each Week Point. week 0 = mappedWeekData index 0
+   */
   mappedWeekData: number[];
+
+  /**
+   * A number between 0 and 1 representing the cursors current position
+   */
+  currentNormalisedX: number;
 
   /**
    * Which direction the cursor is moving. Used in calculate of Y posisition of cursor point.
@@ -155,7 +158,6 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     const graphContainerHeight = this.graphContainer.nativeElement.offsetHeight;
 
     this.graphInnerWidth = graphContainerWidth - (GRID_PAD * 2);
-    this.yGraphTravel = graphContainerHeight - (GRID_PAD * 2);
     this.renderer.setAttribute(this._graph, 'height', graphContainerHeight);
     this.renderer.setAttribute(this._graph, 'width', graphContainerWidth.toString());
     this.weekWidth = this.graphInnerWidth / (this.getSelectedActivity().weeks.length - 1);
@@ -355,7 +357,6 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     });
   }
 
-
   private getNewFlooredWeekNumber(normalisedX: number) {
     const closestWeek = this.getCloseWeekNumber(normalisedX, CloseWeekGetType.floor);
     const shouldEmit = this.currentWeekEmissionHelper.shouldEmit(closestWeek);
@@ -370,7 +371,6 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     return Math[CloseWeekGetType[type]](((normalisedX * this.graphInnerWidth)) /
     (this.graphInnerWidth / (this.getSelectedActivity().weeks.length - 1)));
   }
-
 
   private initGridPathHelper() {
     this.gridPathHelper = new GridPath(
