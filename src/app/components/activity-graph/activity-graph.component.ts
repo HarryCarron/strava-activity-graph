@@ -1,6 +1,7 @@
 // todo: refactor static / dynamic conent methods to seperate init and render methods.
 // todo: dont increment should emit week number : causes bugs elsewhere
 // todo: use reference comparison to check for WeekOffset change
+// todo: declare graph SVG elements in template and access via ref.
 
 import {
   Component,
@@ -38,6 +39,11 @@ interface WeekWithOffset {
 enum CursorFluxDirection {
   right,
   left
+}
+
+enum CloseWeekGetType {
+  round,
+  floor
 }
 
 const GRID_COLOR = '#E8E8E8';
@@ -255,7 +261,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
   private setCursorPosition(x: number) {
 
     const graphX = (x * this.graphInnerWidth) + GRID_PAD;
-    const currentWeek = this.getClosestWeekNumber(x);
+    const currentWeek = this.getCloseWeekNumber(x, CloseWeekGetType.floor);
     const currentWeekValue = this.mappedWeekData[currentWeek];
     const nextWeekValue = this.mappedWeekData[currentWeek + 1];
     /**
@@ -265,11 +271,12 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     const yTravelUnit = Math.abs(currentWeekValue - nextWeekValue);
     const normalised = Math.floor(graphX - (this.weekWidth * currentWeek + GRID_PAD)) / this.weekWidth;
 
+
     this.dynamicGraphNodes.activePoint.forEach(p => {
       this.renderer.setAttribute(p, 'cx', graphX.toString());
-      this.renderer.setAttribute(p, 'cy', yMovingDirection ?
-      (currentWeekValue - (yTravelUnit * normalised)).toString()
-      : (currentWeekValue + (yTravelUnit * normalised)).toString());
+      this.renderer.setAttribute(p, 'cy', (yMovingDirection ?
+      (currentWeekValue - (yTravelUnit * normalised))
+      : (currentWeekValue + (yTravelUnit * normalised))).toString());
     });
     const activeLine = this.dynamicGraphNodes.activeLine;
     this.renderer.setAttribute(activeLine, 'x1', graphX.toString());
@@ -350,7 +357,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
 
 
   private getNewFlooredWeekNumber(normalisedX: number) {
-    const closestWeek = this.getClosestWeekNumber(normalisedX);
+    const closestWeek = this.getCloseWeekNumber(normalisedX, CloseWeekGetType.floor);
     const shouldEmit = this.currentWeekEmissionHelper.shouldEmit(closestWeek);
 
     if (shouldEmit) {
@@ -359,15 +366,11 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     }
   }
 
-  private getClosestWeekNumber(normalisedX: number): number {
-    return Math.floor(((normalisedX * this.graphInnerWidth)) /
+  private getCloseWeekNumber(normalisedX: number, type: CloseWeekGetType): number {
+    return Math[CloseWeekGetType[type]](((normalisedX * this.graphInnerWidth)) /
     (this.graphInnerWidth / (this.getSelectedActivity().weeks.length - 1)));
   }
 
-  private getNearestWeekNumber(normalisedX: number): number {
-    return Math.round(((normalisedX * this.graphInnerWidth)) /
-    (this.graphInnerWidth / (this.getSelectedActivity().weeks.length - 1)));
-  }
 
   private initGridPathHelper() {
     this.gridPathHelper = new GridPath(
@@ -390,7 +393,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
 
   onMouseDrop(clientX: number) {
     const normalisedX = this.getNormalisedXFromClientX(clientX);
-    const nearestWeekNumber = this.getNearestWeekNumber(normalisedX);
+    const nearestWeekNumber = this.getCloseWeekNumber(normalisedX, CloseWeekGetType.round);
 
     this.setWeekContainerScroll(
       this._weekContainer.offsetWidth  * nearestWeekNumber, true
