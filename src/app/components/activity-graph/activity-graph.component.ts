@@ -109,9 +109,6 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
   private mappedDataCache: number[] = [];
 
   activityType = activityType;
-
-  activeData;
-
   tabs = [
     {
       icon: 'fa-running',
@@ -180,7 +177,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     return `${this.formatKMs(distance)} km`;
   }
 
-  private renderStaticContent(): void {
+  private initStaticContent(): void {
 
     const boundingRect = this.aGraphSrv.getBoundingRectangle();
 
@@ -214,20 +211,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
 
   private initDynamicContent(): void {
 
-    // active line
-    const activeLine = this.aGraphSrv.getActiveWeekLine();
-    this.renderer.setAttribute(activeLine, 'x1', Math.round(this.rightLimit).toString());
-    this.renderer.setAttribute(activeLine, 'y1', (this.cielLimit + this.floorLimit).toString());
-    this.renderer.setAttribute(activeLine, 'x2', Math.round(this.rightLimit).toString());
-    this.renderer.setAttribute(activeLine, 'y2', this.cielLimit.toString());
-    this.renderer.appendChild(this._graph, activeLine);
-    this.dynamicGraphNodes.activeLine = activeLine;
 
-    // active point
-    const activePoint = this.aGraphSrv.getActivePoint();
-    this.dynamicGraphNodes.activePoint = activePoint;
-    this.renderer.appendChild(this._graph, activePoint[0]);
-    this.renderer.appendChild(this._graph, activePoint[1]);
 
     // path
     const path = this.aGraphSrv.getPath();
@@ -252,6 +236,21 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
       this.renderer.appendChild(this._graph, wp[0]);
       return wp;
     });
+
+    // active line
+    const activeLine = this.aGraphSrv.getActiveWeekLine();
+    this.renderer.setAttribute(activeLine, 'x1', Math.round(this.rightLimit).toString());
+    this.renderer.setAttribute(activeLine, 'y1', (this.cielLimit + this.floorLimit).toString());
+    this.renderer.setAttribute(activeLine, 'x2', Math.round(this.rightLimit).toString());
+    this.renderer.setAttribute(activeLine, 'y2', this.cielLimit.toString());
+    this.renderer.appendChild(this._graph, activeLine);
+    this.dynamicGraphNodes.activeLine = activeLine;
+
+    // active point
+    const activePoint = this.aGraphSrv.getActivePoint();
+    this.dynamicGraphNodes.activePoint = activePoint;
+    this.renderer.appendChild(this._graph, activePoint[0]);
+    this.renderer.appendChild(this._graph, activePoint[1]);
 
   }
 
@@ -440,7 +439,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
   ngOnInit() {
     this.setDimensions();
     this.initGridPathHelper();
-    this.renderStaticContent();
+    this.initStaticContent();
     this.initDynamicContent();
   }
 
