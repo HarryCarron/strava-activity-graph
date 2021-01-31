@@ -31,11 +31,13 @@ interface ActivityData {
   cycle: TwelveWeekData;
   swim: TwelveWeekData;
 }
-
+/**
+ * Enum representation of activity type. 0 is reserved for no activity. (floored values)
+ */
 export enum activityType {
-  run,
-  cycle,
-  swim,
+  run = 1,
+  cycle = 2,
+  swim = 3,
 }
 
 export interface TwelveWeekData {
@@ -125,7 +127,7 @@ export class AppComponent implements OnInit {
         weeks,
       };
 
-      output[activityType[e]] = activity as TwelveWeekData;
+      output[activityType[e + 1]] = activity as TwelveWeekData;
     });
     return output as ActivityData;
   }

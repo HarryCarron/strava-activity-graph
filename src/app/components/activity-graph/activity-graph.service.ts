@@ -45,38 +45,25 @@ export class ActivityGraphService {
     return [activeWeekPointAccent, activeWeekPoint];
   }
 
-  private getAnimate(animateAttr: string) {
-    const animation = this.renderer.createElement('animate',  'svg');
-    this.renderer.setAttribute(animation, 'attributeName',    animateAttr);
-    this.renderer.setAttribute(animation, 'repeatCount',      'infinite');
-    this.renderer.setAttribute(animation, 'dur',              '0.5s');
-    this.renderer.setAttribute(animation, 'fill',             'freeze');
-    return animation;
-  }
 
   public getWeekPoint() {
     const weekPoint = this.renderer.createElement('circle', 'svg');
-    const weekPointAnimate = this.getAnimate('cy');
     this.renderer.setAttribute(weekPoint, 'r',              '3');
     this.renderer.setAttribute(weekPoint, 'fill',           'white');
     this.renderer.setAttribute(weekPoint, 'stroke',         this.dynamicElementColor);
     this.renderer.setAttribute(weekPoint, 'stroke-width',   '2');
 
-    this.renderer.appendChild(weekPoint, weekPointAnimate);
-
-    return [weekPoint, weekPointAnimate];
+    return weekPoint;
   }
 
   public getPath() {
     const path = this.renderer.createElement('path', 'svg');
-    const pathAnimation = this.getAnimate('d');
 
     this.renderer.setAttribute(path, 'stroke',            this.dynamicElementColor);
     this.renderer.setAttribute(path, 'fill',              'none');
     this.renderer.setAttribute(path, 'stroke-width',      '2');
     this.renderer.setAttribute(path, 'stroke-linecap',    'round');
-    this.renderer.appendChild(path, pathAnimation);
-    return [path, pathAnimation];
+    return path;
   }
 
   public getFill() {
@@ -85,9 +72,7 @@ export class ActivityGraphService {
     this.renderer.setAttribute(fill, 'fill',              'url(#grad1)');
     this.renderer.setAttribute(fill, 'stroke-width',      '0');
 
-    const fillAnimation = this.getAnimate('d');
-    this.renderer.appendChild(fill, fillAnimation);
-    return [fill, fillAnimation];
+    return fill;
   }
 
   public getBoundingRectangle() {
