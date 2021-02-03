@@ -22,6 +22,9 @@ const CIEL_PAD = 10;
 const GRID_PAD = 20;
 const FLOOR_PAD = 35;
 
+const TAB_ON_CLASS = 'tabOn';
+const TAB_OFF_CLASS = 'tabOff';
+
 enum CursorFluxDirection {
   right,
   left
@@ -459,7 +462,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
 
 
   getTabClass(id: number) {
-    return this.activeTab === id ? 'tabOn' : 'tabOff';
+    return this.activeTab === id ? TAB_ON_CLASS : TAB_OFF_CLASS;
   }
 
   onMouseDrop(clientX: number) {

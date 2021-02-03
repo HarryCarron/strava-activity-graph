@@ -53,17 +53,9 @@
 
   <div #graphContainer class="w-100 grid-container">
     <svg #graph (mousedown)="onClick($event)">
-      <path
-        #path
-        [attr.stroke]="dynamicElementColor"
-        fill="none"
-        stroke-width="2"
-        stroke-linecap="round"
-      ></path>
-
       <g *ngFor="let week of getActivity().weeks; let i = index">
         <line
-          *ngIf="![0, mappedYPoints[0].legnth - 1].includes(i)"
+          *ngIf="![0, mappedYPoints[0].length - 1].includes(i)"
           [attr.stroke]="gridColor"
           stroke-width="1"
           [attr.x1]="leftLimit + weekWidth * i"
@@ -116,6 +108,13 @@
         [attr.y1]="cielLimit + floorLimit"
         [attr.y2]="cielLimit"
       ></line>
+      <path
+        #path
+        [attr.stroke]="dynamicElementColor"
+        fill="none"
+        stroke-width="2"
+        stroke-linecap="round"
+      ></path>
       <circle
         #cursorPoint
         r="4"
