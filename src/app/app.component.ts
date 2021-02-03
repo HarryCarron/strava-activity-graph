@@ -15,7 +15,7 @@ const UPPER_DISTANCE_LIMIT_M = 100000;
  */
 const LOWER_DISTANCE_LIMIT_M = 5000;
 
-export const NUMBER_OF_WEEKS = 12;
+export const NUMBER_OF_WEEKS = 16;
 
 export interface WeekInfo {
   displayDate: string;
