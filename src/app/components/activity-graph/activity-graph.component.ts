@@ -160,6 +160,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
 
   private weekPoints = [];
 
+  private _weekPointTarget;
   private _cursorPointAccent;
   private _cursorPoint;
   private _cursorLine;
@@ -210,6 +211,11 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
   @ViewChild('cursorPointAccent', { static: true })
   set cursorPointAccent(e) {
     this._cursorPointAccent = e.nativeElement;
+  }
+
+  @ViewChild('weekPointTarget', { static: true })
+  set weekPointTarget(e) {
+    this._weekPointTarget = e.nativeElement;
   }
 
   @Input() data: TwelveWeekData;
@@ -273,7 +279,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
       const xPointPosition = (this.leftLimit + this.weekWidth * i);
       this.renderer.setAttribute(wp, 'cx', xPointPosition.toString());
       this.renderer.setAttribute(wp, 'cy', yPointPosition.toString());
-      this.renderer.appendChild(this._graph, wp);
+      this.renderer.appendChild(this._weekPointTarget, wp);
       return wp;
     });
 

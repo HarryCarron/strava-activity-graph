@@ -97,6 +97,7 @@
           style="stop-color: rgb(252, 76, 3); stop-opacity: 0.4"
         />
       </linearGradient>
+
       <line
         #cursor
         [attr.stroke]="dynamicElementColor"
@@ -115,6 +116,9 @@
         stroke-width="2"
         stroke-linecap="round"
       ></path>
+
+      <g #weekPointTarget></g>
+
       <circle
         #cursorPoint
         r="4"
