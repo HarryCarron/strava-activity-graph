@@ -9,31 +9,19 @@ import {
   Output,
   OnInit,
   ChangeDetectionStrategy,
-  ChangeDetectorRef
+  ChangeDetectorRef,
+  SimpleChange,
+  SimpleChanges
 } from '@angular/core';
 import { TwelveWeekData, activityType, WeekInfo } from './../../app.component';
 import { ActivityGraphService } from './activity-graph.service';
+import { animationFrameScheduler, of, scheduled, Subject } from 'rxjs';
+import { repeat, takeUntil } from 'rxjs/operators';
 import { UtilitiesService } from './../../utilities.service';
-import { animationFrameScheduler, interval, Observable, of, Subject, timer } from 'rxjs';
-import { repeat, takeUntil, take } from 'rxjs/operators';
-import { animationFrame } from 'rxjs/internal/scheduler/animationFrame';
 
 const CIEL_PAD = 10;
 const GRID_PAD = 17;
 const FLOOR_PAD = 35;
-
-enum ConversionType {
-  normalisedXtoGraphX,
-  graphXtoNormalisedX,
-  weekNumberToGraphX,
-  WeekContainerToNormalisedX
-}
-
-interface WeekWithOffset {
-  lastWeek: number;
-  currentWeek: number;
-  nextWeek: number;
-}
 
 enum CursorFluxDirection {
   right,
@@ -70,6 +58,19 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     weekPoints: []
   };
 
+  dataChanges$ = new Subject<SimpleChanges>();
+
+  /**
+   * Sectors represent space between weeks. Essentially @param numberOfWeeks - 1.
+   * Seems trivial, but removes the need to frequently subtract one from numberOfWeeks makes the code more readible
+   */
+  numberOfSectors: number;
+  /**
+   * Number of weeks in given data set. A week represents each point on the graph.
+   * Value will update if external data source changes : * upcoming feature *
+   */
+  numberOfWeeks: number;
+
   graphInnerWidth: number;
   /**
    * The width in px of one week sector
@@ -96,11 +97,13 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
    */
   graphXCache: number;
   animationRunning: boolean;
+  currentlyActiveWeek: number;
 
   constructor(
     private renderer: Renderer2,
     private aGraphSrv: ActivityGraphService,
     private cd: ChangeDetectorRef,
+    private utils: UtilitiesService
     ) {
       aGraphSrv.renderer = renderer;
       aGraphSrv.dynamicElementColor = DYNAMIC_ELEMENT_COLOR;
@@ -154,20 +157,25 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     return this.graphContainer.nativeElement.getBoundingClientRect().left;
   }
 
-  private setDimensions(): void {
+  private initalise(): void {
 
     const graphContainerWidth = this.graphContainer.nativeElement.offsetWidth;
     const graphContainerHeight = this.graphContainer.nativeElement.offsetHeight;
-
-    this.graphInnerWidth = graphContainerWidth - (GRID_PAD * 2);
-    this.renderer.setAttribute(this._graph, 'height', graphContainerHeight);
-    this.renderer.setAttribute(this._graph, 'width', graphContainerWidth.toString());
-    this.weekWidth = this.graphInnerWidth / (this.getActivity().weeks.length - 1);
 
     this.cielLimit = CIEL_PAD;
     this.leftLimit = GRID_PAD;
     this.floorLimit = this.graphContainer.nativeElement.offsetHeight - FLOOR_PAD;
     this.rightLimit = graphContainerWidth - GRID_PAD;
+
+    this.numberOfWeeks = (this.data as any).run.weeks.length || 0;
+    this.numberOfSectors = this.numberOfWeeks ? this.numberOfWeeks - 1 : 0;
+    this.mapTabsYValues();
+
+    this.graphInnerWidth = graphContainerWidth - (GRID_PAD * 2);
+    this.renderer.setAttribute(this._graph, 'height', graphContainerHeight);
+    this.renderer.setAttribute(this._graph, 'width', graphContainerWidth.toString());
+    this.weekWidth = this.graphInnerWidth / this.numberOfSectors;
+
   }
 
   highestWeeklyDistance(): string {
@@ -223,7 +231,6 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
 
   private initDynamicContent(): void {
 
-
     // path
     const path = this.aGraphSrv.getPath();
     this.dynamicGraphNodes.path = path;
@@ -264,24 +271,29 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
 
   }
 
-  private mapWeekPoint(value) {
+  private mapWeekPoint(value, highestWeeklyDistance) {
     return this.cielLimit + (this.floorLimit) -
-    ((value / (this.getActivity().highestWeeklyDistance - 0)) * this.floorLimit);
+    ((value / highestWeeklyDistance) * this.floorLimit);
+  }
+
+  private setCursorYPosition(y: number) {
+    this.dynamicGraphNodes.activePoint.forEach(p => {
+      this.renderer.setAttribute(p, 'cy', y.toString());
+    });
   }
 
   private setCursorPosition(x: number) {
 
     const graphX = (x * this.graphInnerWidth) + GRID_PAD;
-    const currentWeek = this.getCloseWeekNumber(x, CloseWeekGetType.floor);
-    const currentWeekValue = this.mappedYPoints[this.activeTab][currentWeek];
-    const nextWeekValue = this.mappedYPoints[this.previouslyActiveTab][currentWeek + 1];
+    this.currentlyActiveWeek = this.getCloseWeekNumber(x, CloseWeekGetType.floor);
+    const currentWeekValue = this.mappedYPoints[this.activeTab][this.currentlyActiveWeek];
+    const nextWeekValue = this.mappedYPoints[this.activeTab][this.currentlyActiveWeek + 1];
     /**
      * when true, cursor point will travel up graph: vice vera
      */
     const yMovingDirection = currentWeekValue >= nextWeekValue;
     const yTravelUnit = Math.abs(currentWeekValue - nextWeekValue || 0);
-    const normalised = Math.floor(graphX - (this.weekWidth * currentWeek + GRID_PAD)) / this.weekWidth;
-
+    const normalised = Math.floor(graphX - (this.weekWidth * this.currentlyActiveWeek + GRID_PAD)) / this.weekWidth;
 
     this.dynamicGraphNodes.activePoint.forEach(p => {
       this.renderer.setAttribute(p, 'cx', graphX.toString());
@@ -305,14 +317,25 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     return this.data[activityType[tabId ?? this.activeTab]];
   }
 
-  private getPreviouslySelectedActivity() { // todo redo clean
-    return this.data[activityType[this.previouslyActiveTab]];
-  }
-
   private renderWeekPoint(weekPointId: number, newY: number, oldY?: number) {
     const week = this.dynamicGraphNodes.weekPoints[weekPointId];
     this.renderer.setAttribute(week, 'cy', newY.toString());
+  }
 
+  private setPathAndFill(pathValues: number[]) {
+    const pathElement = this.dynamicGraphNodes.path;
+    const fillElement = this.dynamicGraphNodes.fill;
+    const path = pathValues.map((p, i) => {
+      const pathCommand = !i ? 'M ' : 'L ';
+      return `${pathCommand} ${this.leftLimit + this.weekWidth * i}, ${p}`;
+    }).join(' ');
+    this.renderer.setAttribute(pathElement, 'd', path);
+
+    const pathComplete = path + [
+      `L ${this.leftLimit + (this.weekWidth * (pathValues.length - 1))}, ${this.floorLimit + this.cielLimit}`,
+      `L ${this.leftLimit}, ${this.floorLimit + this.cielLimit}`
+    ].join(' ');
+    this.renderer.setAttribute(fillElement, 'd', pathComplete);
   }
 
   private updateDynamicContent() {
@@ -322,27 +345,52 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     const getYTravelUnit = (a: number, b: number) => Math.abs(a - b) / 100;
     const endYPositions: number[] = this.mappedYPoints[this.activeTab];
     const startYPositions: number[] = this.mappedYPoints[this.previouslyActiveTab];
-
+    const isIncrementer = (a, b) => a >= b;
+    const startCursorYPosition = this.mappedYPoints[this.previouslyActiveTab][this.currentlyActiveWeek];
+    const endCursorYPosition = this.mappedYPoints[this.activeTab][this.currentlyActiveWeek];
+    const yTravelCursorUnits =  getYTravelUnit(endCursorYPosition, startCursorYPosition);
     const yTravelUnits =  [];
     const operator = [];
 
+
+
     startYPositions.forEach((sy, i) => {
       yTravelUnits.push(getYTravelUnit(sy, endYPositions[i]));
-      operator.push(sy >= endYPositions[i]);
+      operator.push(isIncrementer(sy, endYPositions[i]));
     });
 
     const animate = () => {
+
+      if (this.animationRunning) {
+        this.currentAnimation$.next();
+      }
+
+      this.animationRunning = true;
       let count = -1;
-      interval(1).pipe(takeUntil(this.currentAnimation$)).subscribe(x => {
+      scheduled(of(0), animationFrameScheduler)
+      .pipe(repeat(), takeUntil(this.currentAnimation$))
+      .subscribe(x => {
         count ++;
+        const path = [];
         startYPositions.forEach((sy: number, i: number) => {
           const travel = yTravelUnits[i];
           const yPos = operator[i]
-          ? (sy - (travel * count))
-          : (sy + (travel * count));
+          ? sy - (travel * count)
+          : sy + (travel * count);
           this.renderWeekPoint(i, yPos);
+          path.push(yPos);
         });
+
+        this.setPathAndFill(path);
+
+        this.setCursorYPosition(
+          isIncrementer(startCursorYPosition, endCursorYPosition)
+          ? (startCursorYPosition - (yTravelCursorUnits * count))
+          : (startCursorYPosition + (yTravelCursorUnits * count))
+          );
+
         if (count === 100) {
+          this.animationRunning = false;
           this.currentAnimation$.next();
         }
       });
@@ -371,7 +419,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
 
   private getCloseWeekNumber(normalisedX: number, type: CloseWeekGetType): number {
     return Math[CloseWeekGetType[type]](((normalisedX * this.graphInnerWidth)) /
-    (this.graphInnerWidth / (this.getActivity().weeks.length - 1)));
+    (this.graphInnerWidth / this.numberOfSectors));
   }
 
 
@@ -394,11 +442,18 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
   }
 
   private mapTabsYValues() {
-    this.mappedYPoints.push((this.data as any).run.weeks.map((_) => this.floorLimit + this.cielLimit));
+    const flatYPoints = this.utils.arrayOfLength(this.numberOfWeeks).map(_ => this.floorLimit + this.cielLimit);
+    this.mappedYPoints.push(flatYPoints);
     ['run', 'cycle', 'swim'].forEach(actvity => {
-      this.mappedYPoints.push((this.data as any)[actvity].weeks.map(({distance}) => this.mapWeekPoint(distance)));
+      const activity = (this.data as any)[actvity];
+      this.mappedYPoints.push((activity.weeks.map(({distance}) => this.mapWeekPoint(distance, activity.highestWeeklyDistance))));
     });
   }
+
+  private subscribeDataChanges() {
+    this.dataChanges$.subscribe(_ => this.initalise());
+  }
+
 
   getTabClass(id: number) {
     return this.activeTab === id ? 'tabOn' : 'tabOff';
@@ -411,7 +466,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     this.setWeekContainerScroll(
       this._weekContainer.offsetWidth  * nearestWeekNumber, true
     );
-    this.setCursorPosition((1 / (this.getActivity().weeks.length - 1)) * nearestWeekNumber);
+    this.setCursorPosition((1 / this.numberOfSectors * nearestWeekNumber));
   }
 
   onMove(clientX: number) {
@@ -430,19 +485,23 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     this.cd.detectChanges();
   }
 
-  onTabSelect(tabId: activityType) { // todo needs tidying
+  onTabSelect(tabId: activityType) {
     this.activeTab = tabId;
     this.updateDynamicContent();
   }
 
   ngOnInit() {
-    this.setDimensions();
+    this.subscribeDataChanges();
+    this.initalise();
     this.initStaticContent();
     this.initDynamicContent();
   }
 
+  ngOnChanges() {
+    this.dataChanges$.next();
+  }
+
   ngAfterViewInit() {
-    this.mapTabsYValues();
     this.onSetActiveTab(1, true);
     this.setWeek(1);
   }
