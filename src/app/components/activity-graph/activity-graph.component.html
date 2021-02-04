@@ -53,28 +53,6 @@
 
   <div #graphContainer class="w-100 grid-container">
     <svg #graph (mousedown)="onClick($event)">
-      <g *ngFor="let week of getActivity().weeks; let i = index">
-        <line
-          *ngIf="![0, mappedYPoints[0].length - 1].includes(i)"
-          [attr.stroke]="gridColor"
-          stroke-width="1"
-          [attr.x1]="leftLimit + weekWidth * i"
-          [attr.x2]="leftLimit + weekWidth * i"
-          [attr.y1]="cielLimit + floorLimit"
-          [attr.y2]="cielLimit"
-        ></line>
-        <g *ngIf="week.isBeginingOfMonth">
-          <text
-            [attr.x]="leftLimit + weekWidth * i - 10"
-            [attr.y]="floorLimit + 25"
-            font-size="8px !important"
-            fill="#A9A9A9"
-          >
-            {{ week.monthShort.toUpperCase() }}
-          </text>
-        </g>
-      </g>
-
       <path #fill fill="url(#grad1)" stroke="none" stroke-width="0"></path>
 
       <rect
@@ -98,6 +76,46 @@
         />
       </linearGradient>
 
+      <path
+        #path
+        [attr.stroke]="dynamicElementColor"
+        fill="none"
+        stroke-width="2"
+        stroke-linecap="round"
+      ></path>
+
+      <g *ngFor="let week of getActivity().weeks; let i = index">
+        <line
+          *ngIf="![0, mappedYPoints[0].length - 1].includes(i)"
+          [attr.stroke]="gridColor"
+          stroke-width="1"
+          [attr.x1]="leftLimit + weekWidth * i"
+          [attr.x2]="leftLimit + weekWidth * i"
+          [attr.y1]="cielLimit + floorLimit"
+          [attr.y2]="cielLimit"
+        ></line>
+
+        <circle
+          r="3"
+          fill="white"
+          [attr.cy]="activeWeekMappedYPoints[i]"
+          [attr.cx]="leftLimit + weekWidth * i"
+          [attr.stroke]="dynamicElementColor"
+          stroke-width="2"
+        ></circle>
+
+        <g *ngIf="week.isBeginingOfMonth">
+          <text
+            [attr.x]="leftLimit + weekWidth * i - 10"
+            [attr.y]="floorLimit + 25"
+            font-size="8px !important"
+            fill="#A9A9A9"
+          >
+            {{ week.monthShort.toUpperCase() }}
+          </text>
+        </g>
+      </g>
+
       <line
         #cursor
         [attr.stroke]="dynamicElementColor"
@@ -109,15 +127,6 @@
         [attr.y1]="cielLimit + floorLimit"
         [attr.y2]="cielLimit"
       ></line>
-      <path
-        #path
-        [attr.stroke]="dynamicElementColor"
-        fill="none"
-        stroke-width="2"
-        stroke-linecap="round"
-      ></path>
-
-      <g #weekPointTarget></g>
 
       <circle
         #cursorPoint
@@ -125,6 +134,7 @@
         [attr.fill]="dynamicElementColor"
         id="cursor-point"
       ></circle>
+
       <circle
         #cursorPointAccent
         r="8"

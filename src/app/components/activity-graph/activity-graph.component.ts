@@ -2,7 +2,6 @@ import {
   Component,
   Input,
   ViewChild,
-  ElementRef,
   AfterViewInit,
   Renderer2,
   EventEmitter,
@@ -13,7 +12,6 @@ import {
   SimpleChanges
 } from '@angular/core';
 import { TwelveWeekData, activityType, WeekInfo } from './../../app.component';
-import { ActivityGraphService } from './activity-graph.service';
 import { animationFrameScheduler, of, scheduled, Subject } from 'rxjs';
 import { repeat, takeUntil } from 'rxjs/operators';
 import { UtilitiesService } from './../../utilities.service';
@@ -99,6 +97,11 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
   mappedYPoints: any[] = [];
 
   /**
+   * todo docs
+   */
+  activeWeekMappedYPoints: any[] = [];
+
+  /**
    * A number between 0 and 1 representing the cursors current position
    */
   currentNormalisedX: number;
@@ -125,14 +128,9 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
 
   constructor(
     private renderer: Renderer2,
-    private aGraphSrv: ActivityGraphService,
     private cd: ChangeDetectorRef,
     private utils: UtilitiesService
-    ) {
-      aGraphSrv.renderer = renderer;
-      aGraphSrv.dynamicElementColor = DYNAMIC_ELEMENT_COLOR;
-      aGraphSrv.gridColor = GRID_COLOR;
-    }
+    ) {}
   cielLimit: number;
   floorLimit: number;
   leftLimit: number;
@@ -158,9 +156,6 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     },
   ];
 
-  private weekPoints = [];
-
-  private _weekPointTarget;
   private _cursorPointAccent;
   private _cursorPoint;
   private _cursorLine;
@@ -211,11 +206,6 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
   @ViewChild('cursorPointAccent', { static: true })
   set cursorPointAccent(e) {
     this._cursorPointAccent = e.nativeElement;
-  }
-
-  @ViewChild('weekPointTarget', { static: true })
-  set weekPointTarget(e) {
-    this._weekPointTarget = e.nativeElement;
   }
 
   @Input() data: TwelveWeekData;
@@ -272,17 +262,6 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     this.dynamicGraphNodes.cursorPoint = [this._cursorPoint, this._cursorPointAccent];
     this.dynamicGraphNodes.cursorLine = this._cursorLine;
 
-    this.dynamicGraphNodes.weekPoints = this.getActivity().weeks.map((_, i) => {
-      const wp = this.aGraphSrv.getWeekPoint();
-
-      const yPointPosition = this.floorLimit + this.cielLimit;
-      const xPointPosition = (this.leftLimit + this.weekWidth * i);
-      this.renderer.setAttribute(wp, 'cx', xPointPosition.toString());
-      this.renderer.setAttribute(wp, 'cy', yPointPosition.toString());
-      this.renderer.appendChild(this._weekPointTarget, wp);
-      return wp;
-    });
-
   }
 
   private mapWeekPoint(value, highestWeeklyDistance) {
@@ -329,11 +308,6 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     return this.data[activityType[tabId ?? this.activeTab]];
   }
 
-  private renderWeekPoint(weekPointId: number, newY: number, oldY?: number) {
-    const week = this.dynamicGraphNodes.weekPoints[weekPointId];
-    this.renderer.setAttribute(week, 'cy', newY.toString());
-  }
-
   private setPathAndFill(pathValues: number[]) {
     const pathElement = this.dynamicGraphNodes.path;
     const fillElement = this.dynamicGraphNodes.fill;
@@ -364,8 +338,6 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     const yTravelUnits =  [];
     const operator = [];
 
-
-
     startYPositions.forEach((sy, i) => {
       yTravelUnits.push(getYTravelUnit(sy, endYPositions[i]));
       operator.push(isIncrementer(sy, endYPositions[i]));
@@ -383,17 +355,15 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
       .pipe(repeat(), takeUntil(this.currentAnimation$))
       .subscribe(x => {
         count ++;
-        const path = [];
-        startYPositions.forEach((sy: number, i: number) => {
-          const travel = yTravelUnits[i];
-          const yPos = operator[i]
-          ? sy - (travel * count)
-          : sy + (travel * count);
-          this.renderWeekPoint(i, yPos);
-          path.push(yPos);
-        });
+        this.activeWeekMappedYPoints = startYPositions.map((sy: number, i: number) =>
+          operator[i]
+          ? sy - (yTravelUnits[i] * count)
+          : sy + (yTravelUnits[i] * count)
+        );
 
-        this.setPathAndFill(path);
+        this.setPathAndFill(this.activeWeekMappedYPoints);
+
+        this.cd.detectChanges();
 
         this.setCursorYPosition(
           isIncrementer(startCursorYPosition, endCursorYPosition)
