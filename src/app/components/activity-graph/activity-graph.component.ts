@@ -341,8 +341,8 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
     const endYPositions: number[] = this.mappedYPoints[this.activeTab];
     const startYPositions: number[] = this.mappedYPoints[this.previouslyActiveTab];
     const isIncrementer = (a, b) => a >= b;
-    const startCursorYPosition = this.mappedYPoints[this.previouslyActiveTab][this.currentlyActiveWeek || this.numberOfSectors];
-    const endCursorYPosition = this.mappedYPoints[this.activeTab][this.currentlyActiveWeek || this.numberOfSectors];
+    const startCursorYPosition = this.mappedYPoints[this.previouslyActiveTab][this.currentlyActiveWeek ?? this.numberOfSectors];
+    const endCursorYPosition = this.mappedYPoints[this.activeTab][this.currentlyActiveWeek ?? this.numberOfSectors];
     const yTravelCursorUnits =  getYTravelUnit(endCursorYPosition, startCursorYPosition);
     const yTravelUnits =  [];
     const operator = [];
