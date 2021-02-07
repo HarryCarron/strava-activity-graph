@@ -1,7 +1,12 @@
-<div class="centerise h-100 w-100">
-  <!-- <div style="position: absolute; left: 0px; top: 0px; height: 100%">
-    <app-tools></app-tools>
+<div class="h-100 w-100 d-flex">
+  <div class="h-100 flex-grow-1 centerise">
+    <app-activity-graph [data]="data"></app-activity-graph>
+  </div>
+  <!--
+  <div
+    class="data-editor-container"
+    [ngClass]="dataEditorOpen ? 'editor-open' : 'editor-closed'"
+  >
+    <app-data-editor [isOpen]="dataEditorOpen"></app-data-editor>
   </div> -->
-
-  <app-activity-graph [data]="data"></app-activity-graph>
 </div>

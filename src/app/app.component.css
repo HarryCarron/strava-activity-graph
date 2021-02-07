@@ -1,0 +1,19 @@
+.flex-1-no-grow {
+  flex: 1 0 auto;
+}
+
+.data-editor-container {
+  transition: width 1s;
+}
+
+.editor-open {
+  right: 0px;
+}
+
+.editor-closed {
+  width: -450px;
+}
+
+.data-editor-container {
+  position: relative;
+}

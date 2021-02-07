@@ -55,6 +55,8 @@ export class AppComponent implements OnInit {
 
   data: ActivityData;
 
+  dataEditorOpen = false;
+
   /**
    * Generates random distance in meters
    */
