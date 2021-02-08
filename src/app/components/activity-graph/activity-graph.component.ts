@@ -335,9 +335,9 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
 
   private updateDynamicContent() {
 
-    const time = 300;
+    const time = 30;
 
-    const getYTravelUnit = (a: number, b: number) => Math.abs(a - b) / (time / 10);
+    const getYTravelUnit = (a: number, b: number) => Math.abs(a - b) / time;
     const endYPositions: number[] = this.mappedYPoints[this.activeTab];
     const startYPositions: number[] = this.mappedYPoints[this.previouslyActiveTab];
     const isIncrementer = (a, b) => a >= b;
@@ -380,7 +380,7 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
           : (startCursorYPosition + (yTravelCursorUnits * count))
           );
 
-        if (count === (time / 10)) {
+        if (count === time) {
           this.animationRunning = false;
           this.currentAnimation$.next();
         }
@@ -500,16 +500,11 @@ export class ActivityGraphComponent implements AfterViewInit, OnInit {
 }
 
 class CurrentWeekEmissionHelper {
-  private _current: number;
-
-  get current() {
-    return this._current ?? 0;
-  }
+  private current: number = 0;
 
   shouldEmit(v: number) {
-    v = v + 1;
-    if (v !== this._current) {
-      this._current = v;
+    if (v !== this.current) {
+      this.current = v;
 
       return true;
     }
