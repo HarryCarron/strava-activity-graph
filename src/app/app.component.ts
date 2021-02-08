@@ -1,7 +1,7 @@
 import { Component, OnInit } from "@angular/core";
 import { UtilitiesService } from "./utilities.service";
-import * as moment from "moment";
-
+import * as moment_ from "moment";
+const moment = moment_;
 /**
  * One Kilometer time in seconds
  */
@@ -15,7 +15,7 @@ const UPPER_DISTANCE_LIMIT_M = 100000;
  */
 const LOWER_DISTANCE_LIMIT_M = 5000;
 
-export const NUMBER_OF_WEEKS = 16;
+const NUMBER_OF_WEEKS = 16;
 
 export interface WeekInfo {
   displayDate: string;
@@ -79,6 +79,7 @@ export class AppComponent implements OnInit {
 
   private getWeek(i: number, isSwim: boolean): WeekInfo {
     const week = (offset: number) => moment().subtract(offset, "weeks");
+    const weeka = moment;
     const format = (rawWeek) => rawWeek.format("D MMM");
     const weekBegining = week(i);
     const weekEnding = week(i - 1);
