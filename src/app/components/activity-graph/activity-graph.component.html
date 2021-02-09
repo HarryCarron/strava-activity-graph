@@ -157,9 +157,9 @@
 <ng-template #tabTmpl let-tabData="data">
   <div
     (click)="onSetActiveTab(tabData.id)"
-    class="tab flex-fill centerise h-100"
-    [class]="getTabClass(tabData.id)"
+    class="tab flex-grow-1 centerise h-100"
+    [ngClass]="getTabClass(tabData.id)"
   >
-    <i class="fas" [class]="tabData.icon"></i>
+    <i class="fas" [ngClass]="tabData.icon"></i>
   </div>
 </ng-template>

@@ -55,7 +55,7 @@
 }
 
 .week-container-outer {
-  overflow-y: scroll;
+  overflow: hidden;
 }
 .week-container-outer::-webkit-scrollbar {
   display: none;
