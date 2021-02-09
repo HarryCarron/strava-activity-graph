@@ -1,7 +1,7 @@
 import { Component, OnInit } from "@angular/core";
 import { UtilitiesService } from "./utilities.service";
-import * as moment_ from "moment";
-const moment = moment_;
+import moment from "moment";
+
 /**
  * One Kilometer time in seconds
  */
