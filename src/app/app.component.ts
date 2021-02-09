@@ -79,7 +79,6 @@ export class AppComponent implements OnInit {
 
   private getWeek(i: number, isSwim: boolean): WeekInfo {
     const week = (offset: number) => moment().subtract(offset, "weeks");
-    const weeka = moment;
     const format = (rawWeek) => rawWeek.format("D MMM");
     const weekBegining = week(i);
     const weekEnding = week(i - 1);
