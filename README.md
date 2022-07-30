@@ -1,6 +1,6 @@
 # StravaActivityGraph
 
-🚨🚨🚨 OLD, BADLY WRITTEN CODE! 🚨🚨🚨
+# **🚨🚨🚨 OLD, BADLY WRITTEN CODE! 🚨🚨🚨**
 
 StravaActivityGraph is inspired by the interactive 12 week activity graph of the Strava IOS application. It currently consumes randomly generated data when the application loads.
 
