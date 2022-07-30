@@ -1,7 +1,10 @@
 # StravaActivityGraph
+
+🚨🚨🚨 OLD, BADLY WRITTEN CODE! 🚨🚨🚨
+
 StravaActivityGraph is inspired by the interactive 12 week activity graph of the Strava IOS application. It currently consumes randomly generated data when the application loads.
 
-## Lauch Via StackBlitz
+## Launch Via StackBlitz
 Quickly launch and play with the StravaActivityGraph by following this link and installing the required dependancies when prompted. (https://stackblitz.com/github/harrycarron/strava-activity-graph)
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 9.0.5.
